@@ -41,3 +41,22 @@ class GraphSearch():
                     stack.append(n)
                     visited.add(n)
         return res
+
+    def detectCycle(self):
+        visited = set()
+        for v in self.graph.neighbors.keys():
+            if self.detectCycleHelper(v, visited):
+                return True
+        return False
+
+    def detectCycleHelper(self, v, visited):
+        """Detects if there is a cycle includes node v."""
+        if v in visited:
+            return True
+        visited.add(v)
+        if v in self.graph.neighbors:
+            for n in self.graph.neighbors[v]:
+                if self.detectCycleHelper(n, visited):
+                    return True
+                visited.remove(n)
+        return False
