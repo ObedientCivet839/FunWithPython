@@ -21,3 +21,23 @@ class GraphSearch():
                     queue.append(n)
                     visited.add(n)
         return res
+
+    def DFS(self, startVertex):
+        # Create a list (stack) to store all vertices for BFS
+        stack = [startVertex]
+        res = []
+
+        visited = set()
+        visited.add(startVertex)
+
+        while stack:
+            # remove from the end of the list (i.e. top of the stack)
+            v = stack.pop()
+            res.append(v)
+
+            for n in self.graph.neighbors[v]:
+                if n not in visited:
+                    # append to the end of the list (i.e. top of the stack)
+                    stack.append(n)
+                    visited.add(n)
+        return res
