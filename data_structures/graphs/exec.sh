@@ -1,1 +1,1 @@
-python3 graph.py
+python3 search_test.py
