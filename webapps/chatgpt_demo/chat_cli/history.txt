@@ -1,0 +1,75 @@
+
+# 2023-03-02 09:15:35.941384
++Hi. How are you doing today?
+
+# 2023-03-02 09:15:54.249583
++I'm learning to write a new Python CLI using my new Ubuntu setup :)
+
+# 2023-03-02 09:17:22.099985
++hi. How are you doing?
+
+# 2023-03-02 09:17:42.223958
++This is pretty cool I think!
+
+# 2023-03-02 09:17:48.505257
++can you help me write a poem?
+
+# 2023-03-02 09:17:55.480100
++can you help me write another poem?
+
+# 2023-03-02 09:18:01.847986
++Are there other things you can do?
+
+# 2023-03-02 09:18:09.788641
++Are there other things you cannot do?
+
+# 2023-03-02 09:18:30.276723
++What are some example sentences that are using the word hot?
+
+# 2023-03-02 09:24:44.509048
++hi. How are you doing?
+
+# 2023-03-02 09:26:00.413658
++hi
+
+# 2023-03-02 09:35:37.756503
++this is pretty great. Who are you?
+
+# 2023-03-02 09:35:46.612211
++Nice to meet you as well.
+
+# 2023-03-02 09:41:07.715711
++hi
+
+# 2023-03-02 09:41:21.474902
++I'm doing great! Can you give me a new word to learn?
+
+# 2023-03-02 09:41:35.846940
++Thanks. What does it mean?
+
+# 2023-03-02 09:41:46.842867
++What does the previous new word mean?
+
+# 2023-03-02 09:41:55.867153
++serendipity
+
+# 2023-03-02 09:42:34.967783
++can you use it in a sentence?
+
+# 2023-03-02 09:43:05.452997
++hi
+
+# 2023-03-02 09:43:15.247616
++can you teach me a new word?
+
+# 2023-03-02 09:43:25.503958
++can you teach me another new word?
+
+# 2023-03-02 09:43:34.639937
++can you use it in a sentence?
+
+# 2023-03-02 09:43:49.964015
++can you use efferevescent in a sentence?
+
+# 2023-03-02 09:44:00.588177
++can you use efferevescent in another sentence?
