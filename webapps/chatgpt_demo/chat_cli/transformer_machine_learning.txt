@@ -1,0 +1,784 @@
+Title: Transformer (machine learning model) - Wikipedia
+Link: https://en.wikipedia.org/wiki/Transformer_(machine_learning_model)
+Description: A transformer is a deep learning model that adopts the mechanism of self-attention, differentially weighting the significance of each part of the input data ...Vision transformer · Self-supervised learning · Attention · Word embedding
+Full text:
+Transformer (machine learning model)
+A transformer is a deep learning model that adopts the mechanism of self-attention, differentially weighting the significance of each part of the input data. It is used primarily in the fields of natural language processing (NLP)[1] and computer vision (CV).[2]
+Like recurrent neural networks (RNNs), transformers are designed to process sequential input data, such as natural language, with applications towards tasks such as translation and text summarization. However, unlike RNNs, transformers process the entire input all at once. The attention mechanism provides context for any position in the input sequence. For example, if the input data is a natural language sentence, the transformer does not have to process one word at a time. This allows for more parallelization than RNNs and therefore reduces training times.[1]
+Transformers were introduced in 2017 by a team at Google Brain[1] and are increasingly the model of choice for NLP problems,[3] replacing RNN models such as long short-term memory (LSTM). The additional training parallelization allows training on larger datasets. This led to the development of pretrained systems such as BERT (Bidirectional Encoder Representations from Transformers) and GPT (Generative Pre-trained Transformer), which were trained with large language datasets, such as the Wikipedia Corpus and Common Crawl, and can be fine-tuned for specific tasks.[4][5]
+Background[edit]
+Before transformers, most state-of-the-art NLP systems relied on gated RNNs, such as LSTMs and gated recurrent units (GRUs), with added attention mechanisms. Transformers also make use of attention mechanisms but, unlike RNNs, do not have a recurrent structure. This means that provided with enough training data, attention mechanisms alone can match the performance of RNNs with attention.[1]
+Sequential processing[edit]
+Gated RNNs process tokens sequentially, maintaining a state vector that contains a representation of the data seen prior to the current token. To process the th token, the model combines the state representing the sentence up to token with the information of the new token to create a new state, representing the sentence up to token . Theoretically, the information from one token can propagate arbitrarily far down the sequence, if at every point the state continues to encode contextual information about the token. In practice this mechanism is flawed: the vanishing gradient problem leaves the model's state at the end of a long sentence without precise, extractable information about preceding tokens. The dependency of token computations on the results of previous token computations also makes it hard to parallelize computation on modern deep-learning hardware. This can make the training of RNNs inefficient.
+Self-attention[edit]
+These problems were addressed by attention mechanisms. Attention mechanisms let a model draw from the state at any preceding point along the sequence. The attention layer can access all previous states and weigh them according to a learned measure of relevance, providing relevant information about far-away tokens.
+A clear example of the value of attention is in language translation, where context is essential to assign the meaning of a word in a sentence. In an English-to-French translation system, the first word of the French output most probably depends heavily on the first few words of the English input. However, in a classic LSTM model, in order to produce the first word of the French output, the model is given only the state vector after processing the last English word. Theoretically, this vector can encode information about the whole English sentence, giving the model all the necessary knowledge. In practice, this information is often poorly preserved by the LSTM. An attention mechanism can be added to address this problem: the decoder is given access to the state vectors of every English input word, not just the last, and can learn attention weights that dictate how much to attend to each English input state vector.
+When added to RNNs, attention mechanisms increase performance. The development of the Transformer architecture revealed that attention mechanisms were powerful in themselves and that sequential recurrent processing of data was not necessary to achieve the quality gains of RNNs with attention. Transformers use an attention mechanism without an RNN, processing all tokens simultaneously and calculating attention weights between them in successive layers. Since the attention mechanism only uses information about other tokens from lower layers, it can be computed for all tokens in parallel, which leads to improved training speed.
+Architecture[edit]
+Input[edit]
+The input text is parsed into tokens by a byte pair encoding tokenizer, and each token is converted via a word embedding into a vector. Then, positional information of the token is added to the word embedding.
+Encoder–decoder architecture[edit]
+Like earlier seq2seq models, the original Transformer model used an encoder–decoder architecture. The encoder consists of encoding layers that process the input iteratively one layer after another, while the decoder consists of decoding layers that do the same thing to the encoder's output.
+The function of each encoder layer is to generate encodings that contain information about which parts of the inputs are relevant to each other. It passes its encodings to the next encoder layer as inputs. Each decoder layer does the opposite, taking all the encodings and using their incorporated contextual information to generate an output sequence.[6] To achieve this, each encoder and decoder layer makes use of an attention mechanism.
+For each part of the input, attention weighs the relevance of every other part and draws from them to produce the output.[7] Each decoder layer has an additional attention mechanism that draws information from the outputs of previous decoders, before the decoder layer draws information from the encodings.
+Both the encoder and decoder layers have a feed-forward neural network for additional processing of the outputs and contain residual connections and layer normalization steps.[7]
+Scaled dot-product attention[edit]
+The transformer building blocks are scaled dot-product attention units. When a sentence is passed into a transformer model, attention weights are calculated between every token simultaneously. The attention unit produces embeddings for every token in context that contain information about the token itself along with a weighted combination of other relevant tokens each weighted by its attention weight.
+For each attention unit, the transformer model learns three weight matrices; the query weights , the key weights , and the value weights . For each token , the input word embedding is multiplied with each of the three weight matrices to produce a query vector , a key vector , and a value vector . Attention weights are calculated using the query and key vectors: the attention weight from token to token is the dot product between and . The attention weights are divided by the square root of the dimension of the key vectors, , which stabilizes gradients during training, and passed through a softmax which normalizes the weights. The fact that and are different matrices allows attention to be non-symmetric: if token attends to token (i.e. is large), this does not necessarily mean that token will attend to token (i.e. could be small). The output of the attention unit for token is the weighted sum of the value vectors of all tokens, weighted by , the attention from token to each token.
+The attention calculation for all tokens can be expressed as one large matrix calculation using the softmax function, which is useful for training due to computational matrix operation optimizations that quickly compute matrix operations. The matrices , and are defined as the matrices where the th rows are vectors , , and respectively.
+where softmax is taken over the horizontal axis.
+Multi-head attention[edit]
+One set of matrices is called an attention head, and each layer in a transformer model has multiple attention heads. While each attention head attends to the tokens that are relevant to each token, with multiple attention heads the model can do this for different definitions of "relevance". In addition, the influence field representing relevance can become progressively dilated in successive layers. Many transformer attention heads encode relevance relations that are meaningful to humans. For example, some attention heads can attend mostly to the next word, while others mainly attend from verbs to their direct objects.[8] The computations for each attention head can be performed in parallel, which allows for fast processing. The outputs for the attention layer are concatenated to pass into the feed-forward neural network layers.
+Concretely, let the multiple attention heads be indexed by , then we have
+Masked attention[edit]
+It may be necessary to cut out attention links between some word-pairs. For example, the decoder for token position should not have access to token position . This may be accomplished before the softmax stage by adding a mask matrix that is negative infinity at entries where the attention link must be cut, and zero at other places.
+Encoder[edit]
+Each encoder consists of two major components: a self-attention mechanism and a feed-forward neural network. The self-attention mechanism accepts input encodings from the previous encoder and weights their relevance to each other to generate output encodings. The feed-forward neural network further processes each output encoding individually. These output encodings are then passed to the next encoder as its input, as well as to the decoders.
+The first encoder takes positional information and embeddings of the input sequence as its input, rather than encodings. The positional information is necessary for the transformer to make use of the order of the sequence, because no other part of the transformer makes use of this.[1]
+The encoder is bidirectional. Attention can be placed on tokens before and after the current token. Tokens are used instead of words to account for polysemy.
+Positional encoding[edit]
+A positional encoding is a fixed-size vector representation that encapsulates the relative positions of tokens within a target sequence: it provides the transformer model with information about where the words are in the input sequence.
+The positional encoding is defined as a function of type , where is a positive even integer. The full positional encoding - as defined in the original paper - is given by the equation:
+Here, is a free parameter that should be significantly larger than the biggest that would be input into the positional encoding function. In the original paper,[1] the authors chose .
+The function is in a simpler form when written as a complex function of type
+The main reason the authors chose this as the positional encoding function is that it allows one to perform shifts as linear transformations:
+By taking a linear sum, any convolution can also be implemented as linear transformations:
+In typical implementations, all operations are done over the real numbers, not the complex numbers, but since complex multiplication can be implemented as real 2-by-2 matrix multiplication, this is a mere notational difference.
+Other positional encoding schemes exist.[9]
+Decoder[edit]
+Each decoder consists of three major components: a self-attention mechanism, an attention mechanism over the encodings, and a feed-forward neural network. The decoder functions in a similar fashion to the encoder, but an additional attention mechanism is inserted which instead draws relevant information from the encodings generated by the encoders. This mechanism can also be called the encoder-decoder attention.[1][7]
+Like the first encoder, the first decoder takes positional information and embeddings of the output sequence as its input, rather than encodings. The transformer must not use the current or future output to predict an output, so the output sequence must be partially masked to prevent this reverse information flow.[1] This allows for autoregressive text generation. For all attention heads, attention can't be placed on following tokens. The last decoder is followed by a final linear transformation and softmax layer, to produce the output probabilities over the vocabulary.
+GPT has a decoder-only architecture.
+Alternatives[edit]
+Training transformer-based architectures can be expensive, especially for long inputs.[10] Alternative architectures include the Reformer (which reduces the computational load from to [10]), or models like ETC/BigBird (which can reduce it to )[11] where is the length of the sequence. This is done using locality-sensitive hashing and reversible layers.[12][13]
+Ordinary transformers require a memory size that is quadratic in the size of the context window. Attention Free Transformers[14] reduce this to a linear dependence while still retaining the advantages of a transformer by linking the key to the value.
+A benchmark for comparing transformer architectures was introduced in late 2020 by the name of Long Range Arena.[15]
+Training[edit]
+Methods for stabilizing training[edit]
+The plain Transformer architecture has difficulty converging. In the original paper[1] the authors recommended using learning rate warmup. That is, the learning rate should linearly scale up from 0 to maximal value for the first part of the training (usually recommended to be 2% of the total number of training steps), before decaying again.
+[16] found that using layer normalization before (instead of after) multiheaded attention and feedforward layers stabilizes training, not requiring learning rate warmup.
+Pretrain-finetune[edit]
+Transformers typically undergo self-supervised learning involving unsupervised pretraining followed by supervised fine-tuning. Pretraining is typically done on a larger dataset than fine-tuning, due to the limited availability of labeled training data. Tasks for pretraining and fine-tuning commonly include:
+- language modeling[4]
+- next-sentence prediction[4]
+- question answering[5]
+- reading comprehension
+- sentiment analysis[17]
+- paraphrasing[17]
+Applications[edit]
+The transformer has had great success in natural language processing (NLP), for example the tasks of machine translation and time series prediction. Many pretrained models such as GPT-2, GPT-3, BERT, XLNet, RoBERTa and ChatGPT demonstrate the ability of transformers to perform a wide variety of such NLP-related tasks, and have the potential to find real-world applications. These may include:
+- machine translation
+- document summarization
+- document generation
+- named entity recognition (NER)
+- biological sequence analysis
+- video understanding.
+Implementations[edit]
+The transformer model has been implemented in standard deep learning frameworks such as TensorFlow and PyTorch.
+Transformers is a library produced by Hugging Face that supplies transformer-based architectures and pretrained models.[3]
+See also[edit]
+- Perceiver – Machine learning algorithm for non-textual data
+- BERT (language model) – A masked neural language model developed by Google.
+- GPT-3 – 2020 text-generating language model
+- ChatGPT – Artificial intelligence chatbot developed by OpenAI
+- Wu Dao – Chinese multimodal artificial intelligence program
+- Vision transformer – Machine learning algorithm for vision processing
+- BLOOM (language model) – Open-access multilingual language model
+References[edit]
+- ^ a b c d e f g h i Vaswani, Ashish; Shazeer, Noam; Parmar, Niki; Uszkoreit, Jakob; Jones, Llion; Gomez, Aidan N.; Kaiser, Lukasz; Polosukhin, Illia (2017-06-12). "Attention Is All You Need". arXiv:1706.03762 [cs.CL].
+- ^ He, Cheng (31 December 2021). "Transformer in CV". Transformer in CV. Towards Data Science.
+- ^ a b Wolf, Thomas; Debut, Lysandre; Sanh, Victor; Chaumond, Julien; Delangue, Clement; Moi, Anthony; Cistac, Pierric; Rault, Tim; Louf, Remi; Funtowicz, Morgan; Davison, Joe; Shleifer, Sam; von Platen, Patrick; Ma, Clara; Jernite, Yacine; Plu, Julien; Xu, Canwen; Le Scao, Teven; Gugger, Sylvain; Drame, Mariama; Lhoest, Quentin; Rush, Alexander (2020). "Transformers: State-of-the-Art Natural Language Processing". Proceedings of the 2020 Conference on Empirical Methods in Natural Language Processing: System Demonstrations. pp. 38–45. doi:10.18653/v1/2020.emnlp-demos.6. S2CID 208117506.
+- ^ a b c "Open Sourcing BERT: State-of-the-Art Pre-training for Natural Language Processing". Google AI Blog. Retrieved 2019-08-25.
+- ^ a b "Better Language Models and Their Implications". OpenAI. 2019-02-14. Retrieved 2019-08-25.
+- ^ "Sequence Modeling with Neural Networks (Part 2): Attention Models". Indico. 2016-04-18. Retrieved 2019-10-15.
+- ^ a b c Alammar, Jay. "The Illustrated Transformer". jalammar.github.io. Retrieved 2019-10-15.
+- ^ Clark, Kevin; Khandelwal, Urvashi; Levy, Omer; Manning, Christopher D. (August 2019). "What Does BERT Look at? An Analysis of BERT's Attention". Proceedings of the 2019 ACL Workshop BlackboxNLP: Analyzing and Interpreting Neural Networks for NLP. Florence, Italy: Association for Computational Linguistics: 276–286. doi:10.18653/v1/W19-4828.
+- ^ Dufter, Philipp; Schmitt, Martin; Schütze, Hinrich (2022-06-06). "Position Information in Transformers: An Overview". Computational Linguistics. 48 (3): 733–763. doi:10.1162/coli_a_00445. ISSN 0891-2017. S2CID 231986066.
+- ^ a b Kitaev, Nikita; Kaiser, Łukasz; Levskaya, Anselm (2020). "Reformer: The Efficient Transformer". arXiv:2001.04451 [cs.LG].
+- ^ "Constructing Transformers For Longer Sequences with Sparse Attention Methods". Google AI Blog. Retrieved 2021-05-28.
+- ^ "Tasks with Long Sequences – Chatbot". Coursera.
+- ^ "Reformer: The Efficient Transformer". Google AI Blog. Retrieved 2020-10-22.
+- ^ Zhai, Shuangfei; Talbott, Walter; Srivastava, Nitish; Huang, Chen; Goh, Hanlin; Zhang, Ruixiang; Susskind, Josh (2021-09-21). "An Attention Free Transformer". arXiv:2105.14103 [cs.LG].
+- ^ Tay, Yi; Dehghani, Mostafa; Abnar, Samira; Shen, Yikang; Bahri, Dara; Pham, Philip; Rao, Jinfeng; Yang, Liu; Ruder, Sebastian; Metzler, Donald (2020-11-08). "Long Range Arena: A Benchmark for Efficient Transformers". arXiv:2011.04006 [cs.LG].
+- ^ Xiong, Ruibin; Yang, Yunchang; He, Di; Zheng, Kai; Zheng, Shuxin; Xing, Chen; Zhang, Huishuai; Lan, Yanyan; Wang, Liwei; Liu, Tie-Yan (2020-06-29). "On Layer Normalization in the Transformer Architecture". arXiv:2002.04745 [cs, stat].
+- ^ a b Wang, Alex; Singh, Amanpreet; Michael, Julian; Hill, Felix; Levy, Omer; Bowman, Samuel (2018). "GLUE: A Multi-Task Benchmark and Analysis Platform for Natural Language Understanding". Proceedings of the 2018 EMNLP Workshop BlackboxNLP: Analyzing and Interpreting Neural Networks for NLP. Stroudsburg, PA, USA: Association for Computational Linguistics: 353–355. arXiv:1804.07461. doi:10.18653/v1/w18-5446. S2CID 5034059.
+Further reading[edit]
+- Hubert Ramsauer et al. (2020), "Hopfield Networks is All You Need", preprint submitted for ICLR 2021. arXiv:2008.02217; see also authors' blog
+- – Discussion of the effect of a transformer layer as equivalent to a Hopfield update, bringing the input closer to one of the fixed points (representable patterns) of a continuous-valued Hopfield network
+- Alexander Rush, The Annotated transformer, Harvard NLP group, 3 April 2018
+
+
+Title: What is a Transformer? - Medium
+Link: https://medium.com/inside-machine-learning/what-is-a-transformer-d07dd1fbec04
+Description: Jan 4, 2019 · An Introduction to Transformers and Sequence-to-Sequence Learning for Machine Learning. New deep learning models are introduced at an ...
+Full text:
+What is a Transformer?
+An Introduction to Transformers and Sequence-to-Sequence Learning for Machine Learning
+New deep learning models are introduced at an increasing rate and sometimes it’s hard to keep track of all the novelties. That said, one particular neural network model has proven to be especially effective for common natural language processing tasks. The model is called a Transformer and it makes use of several methods and mechanisms that I’ll introduce here. The papers I refer to in the post offer a more detailed and quantitative description.
+Part 1: Sequence to Sequence Learning and Attention
+The paper ‘Attention Is All You Need’ describes transformers and what is called a sequence-to-sequence architecture. Sequence-to-Sequence (or Seq2Seq) is a neural net that transforms a given sequence of elements, such as the sequence of words in a sentence, into another sequence. (Well, this might not surprise you considering the name.)
+Seq2Seq models are particularly good at translation, where the sequence of words from one language is transformed into a sequence of different words in another language. A popular choice for this type of model is Long-Short-Term-Memory (LSTM)-based models. With sequence-dependent data, the LSTM modules can give meaning to the sequence while remembering (or forgetting) the parts it finds important (or unimportant). Sentences, for example, are sequence-dependent since the order of the words is crucial for understanding the sentence. LSTM are a natural choice for this type of data.
+Seq2Seq models consist of an Encoder and a Decoder. The Encoder takes the input sequence and maps it into a higher dimensional space (n-dimensional vector). That abstract vector is fed into the Decoder which turns it into an output sequence. The output sequence can be in another language, symbols, a copy of the input, etc.
+Imagine the Encoder and Decoder as human translators who can speak only two languages. Their first language is their mother tongue, which differs between both of them (e.g. German and French) and their second language an imaginary one they have in common. To translate German into French, the Encoder converts the German sentence into the other language it knows, namely the imaginary language. Since the Decoder is able to read that imaginary language, it can now translates from that language into French. Together, the model (consisting of Encoder and Decoder) can translate German into French!
+Suppose that, initially, neither the Encoder or the Decoder is very fluent in the imaginary language. To learn it, we train them (the model) on a lot of examples.
+A very basic choice for the Encoder and the Decoder of the Seq2Seq model is a single LSTM for each of them.
+You’re wondering when the Transformer will finally come into play, aren’t you?
+We need one more technical detail to make Transformers easier to understand: Attention. The attention-mechanism looks at an input sequence and decides at each step which other parts of the sequence are important. It sounds abstract, but let me clarify with an easy example: When reading this text, you always focus on the word you read but at the same time your mind still holds the important keywords of the text in memory in order to provide context.
+An attention-mechanism works similarly for a given sequence. For our example with the human Encoder and Decoder, imagine that instead of only writing down the translation of the sentence in the imaginary language, the Encoder also writes down keywords that are important to the semantics of the sentence, and gives them to the Decoder in addition to the regular translation. Those new keywords make the translation much easier for the Decoder because it knows what parts of the sentence are important and which key terms give the sentence context.
+In other words, for each input that the LSTM (Encoder) reads, the attention-mechanism takes into account several other inputs at the same time and decides which ones are important by attributing different weights to those inputs. The Decoder will then take as input the encoded sentence and the weights provided by the attention-mechanism. To learn more about attention, see this article. And for a more scientific approach than the one provided, read about different attention-based approaches for Sequence-to-Sequence models in this great paper called ‘Effective Approaches to Attention-based Neural Machine Translation’.
+Part 2: The Transformer
+The paper ‘Attention Is All You Need’ introduces a novel architecture called Transformer. As the title indicates, it uses the attention-mechanism we saw earlier. Like LSTM, Transformer is an architecture for transforming one sequence into another one with the help of two parts (Encoder and Decoder), but it differs from the previously described/existing sequence-to-sequence models because it does not imply any Recurrent Networks (GRU, LSTM, etc.).
+Recurrent Networks were, until now, one of the best ways to capture the timely dependencies in sequences. However, the team presenting the paper proved that an architecture with only attention-mechanisms without any RNN (Recurrent Neural Networks) can improve on the results in translation task and other tasks! One improvement on Natural Language Tasks is presented by a team introducing BERT: BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding.
+So, what exactly is a Transformer?
+An image is worth thousand words, so we will start with that!
+The Encoder is on the left and the Decoder is on the right. Both Encoder and Decoder are composed of modules that can be stacked on top of each other multiple times, which is described by Nx in the figure. We see that the modules consist mainly of Multi-Head Attention and Feed Forward layers. The inputs and outputs (target sentences) are first embedded into an n-dimensional space since we cannot use strings directly.
+One slight but important part of the model is the positional encoding of the different words. Since we have no recurrent networks that can remember how sequences are fed into a model, we need to somehow give every word/part in our sequence a relative position since a sequence depends on the order of its elements. These positions are added to the embedded representation (n-dimensional vector) of each word.
+Let’s have a closer look at these Multi-Head Attention bricks in the model:
+Let’s start with the left description of the attention-mechanism. It’s not very complicated and can be described by the following equation:
+Q is a matrix that contains the query (vector representation of one word in the sequence), K are all the keys (vector representations of all the words in the sequence) and V are the values, which are again the vector representations of all the words in the sequence. For the encoder and decoder, multi-head attention modules, V consists of the same word sequence than Q. However, for the attention module that is taking into account the encoder and the decoder sequences, V is different from the sequence represented by Q.
+To simplify this a little bit, we could say that the values in V are multiplied and summed with some attention-weights a, where our weights are defined by:
+This means that the weights a are defined by how each word of the sequence (represented by Q) is influenced by all the other words in the sequence (represented by K). Additionally, the SoftMax function is applied to the weights a to have a distribution between 0 and 1. Those weights are then applied to all the words in the sequence that are introduced in V (same vectors than Q for encoder and decoder but different for the module that has encoder and decoder inputs).
+The righthand picture describes how this attention-mechanism can be parallelized into multiple mechanisms that can be used side by side. The attention mechanism is repeated multiple times with linear projections of Q, K and V. This allows the system to learn from different representations of Q, K and V, which is beneficial to the model. These linear representations are done by multiplying Q, K and V by weight matrices W that are learned during the training.
+Those matrices Q, K and V are different for each position of the attention modules in the structure depending on whether they are in the encoder, decoder or in-between encoder and decoder. The reason is that we want to attend on either the whole encoder input sequence or a part of the decoder input sequence. The multi-head attention module that connects the encoder and decoder will make sure that the encoder input-sequence is taken into account together with the decoder input-sequence up to a given position.
+After the multi-attention heads in both the encoder and decoder, we have a pointwise feed-forward layer. This little feed-forward network has identical parameters for each position, which can be described as a separate, identical linear transformation of each element from the given sequence.
+Training
+How to train such a ‘beast’? Training and inferring on Seq2Seq models is a bit different from the usual classification problem. The same is true for Transformers.
+We know that to train a model for translation tasks we need two sentences in different languages that are translations of each other. Once we have a lot of sentence pairs, we can start training our model. Let’s say we want to translate French to German. Our encoded input will be a French sentence and the input for the decoder will be a German sentence. However, the decoder input will be shifted to the right by one position. ..Wait, why?
+One reason is that we do not want our model to learn how to copy our decoder input during training, but we want to learn that given the encoder sequence and a particular decoder sequence, which has been already seen by the model, we predict the next word/character.
+If we don’t shift the decoder sequence, the model learns to simply ‘copy’ the decoder input, since the target word/character for position i would be the word/character i in the decoder input. Thus, by shifting the decoder input by one position, our model needs to predict the target word/character for position i having only seen the word/characters 1, …, i-1 in the decoder sequence. This prevents our model from learning the copy/paste task. We fill the first position of the decoder input with a start-of-sentence token, since that place would otherwise be empty because of the right-shift. Similarly, we append an end-of-sentence token to the decoder input sequence to mark the end of that sequence and it is also appended to the target output sentence. In a moment, we’ll see how that is useful for inferring the results.
+This is true for Seq2Seq models and for the Transformer. In addition to the right-shifting, the Transformer applies a mask to the input in the first multi-head attention module to avoid seeing potential ‘future’ sequence elements. This is specific to the Transformer architecture because we do not have RNNs where we can input our sequence sequentially. Here, we input everything together and if there were no mask, the multi-head attention would consider the whole decoder input sequence at each position.
+The process of feeding the correct shifted input into the decoder is also called Teacher-Forcing, as described in this blog.
+The target sequence we want for our loss calculations is simply the decoder input (German sentence) without shifting it and with an end-of-sequence token at the end.
+Inference
+Inferring with those models is different from the training, which makes sense because in the end we want to translate a French sentence without having the German sentence. The trick here is to re-feed our model for each position of the output sequence until we come across an end-of-sentence token.
+A more step by step method would be:
+- Input the full encoder sequence (French sentence) and as decoder input, we take an empty sequence with only a start-of-sentence token on the first position. This will output a sequence where we will only take the first element.
+- That element will be filled into second position of our decoder input sequence, which now has a start-of-sentence token and a first word/character in it.
+- Input both the encoder sequence and the new decoder sequence into the model. Take the second element of the output and put it into the decoder input sequence.
+- Repeat this until you predict an end-of-sentence token, which marks the end of the translation.
+We see that we need multiple runs through our model to translate our sentence.
+I hope that these descriptions have made the Transformer architecture a little bit clearer for everybody starting with Seq2Seq and encoder-decoder structures.
+Part 3: Use-Case ‘Transformer for Time-Series’
+We have seen the Transformer architecture and we know from literature and the ‘Attention is All you Need’ authors that the model does extremely well in language tasks. Let’s now test the Transformer in a use case.
+Instead of a translation task, let’s implement a time-series forecast for the hourly flow of electrical power in Texas, provided by the Electric Reliability Council of Texas (ERCOT). You can find the hourly data here.
+A great detailed explanation of the Transformer and its implementation is provided by harvardnlp. If you want to dig deeper into the architecture, I recommend going through that implementation.
+Since we can use LSTM-based sequence-to-sequence models to make multi-step forecast predictions, let’s have a look at the Transformer and its power to make those predictions. However, we first need to make a few changes to the architecture since we are not working with sequences of words but with values. Additionally, we are doing an auto-regression and not a classification of words/characters.
+The Data
+The available data gives us hourly load for the entire ERCOT control area. I used the data from the years 2003 to 2015 as a training set and the year 2016 as test set. Having only the load value and the timestamp of the load, I expanded the timestamp to other features. From the timestamp, I extracted the weekday to which it corresponds and one-hot encoded it. Additionally, I used the year (2003, 2004, …, 2015) and the corresponding hour (1, 2, 3, …, 24) as the value itself. This gives me 11 features in total for each hour of the day. For convergence purposes, I also normalized the ERCOT load by dividing it by 1000.
+To predict a given sequence, we need a sequence from the past. The size of those windows can vary from use-case to use-case but here in our example I used the hourly data from the previous 24 hours to predict the next 12 hours. It helps that we can adjust the size of those windows depending on our needs. For example, we can change that to daily data instead of hourly data.
+Changes to the model from the paper
+As a first step, we need to remove the embeddings, since we already have numerical values in our input. An embedding usually maps a given integer into an n-dimensional space. Here instead of using the embedding, I simply used a linear transformation to transform the 11-dimensional data into an n-dimensional space. This is similar to the embedding with words.
+We also need to remove the SoftMax layer from the output of the Transformer because our output nodes are not probabilities but real values.
+After those minor changes, the training can begin!
+As mentioned, I used teacher forcing for the training. This means that the encoder gets a window of 24 data points as input and the decoder input is a window of 12 data points where the first one is a ‘start-of-sequence’ value and the following data points are simply the target sequence. Having introduced a ‘start-of-sequence’ value at the beginning, I shifted the decoder input by one position with regard to the target sequence.
+I used an 11-dimensional vector with only -1’s as the ‘start-of-sequence’ values. Of course, this can be changed and perhaps it would be beneficial to use other values depending of the use case but for this example, it works since we never have negative values in either dimension of the input/output sequences.
+The loss function for this example is simply the mean squared error.
+Results
+The two plots below show the results. I took the mean value of the hourly values per day and compared it to the correct values. The first plot shows the 12-hour predictions given the 24 previous hours. For the second plot, we predicted one hour given the 24 previous hours. We see that the model is able to catch some of the fluctuations very well. The root mean squared error for the training set is 859 and for the validation set it is 4,106 for the 12-hour predictions and 2,583 for the 1-hour predictions. This corresponds to a mean absolute percentage error of the model prediction of 8.4% for the first plot and 5.1% for the second one.
+Summary
+The results show that it would be possible to use the Transformer architecture for time-series forecasting. However, during the evaluation, it shows that the more steps we want to forecast the higher the error will become. The first graph (Figure 3) above has been achieved by using the 24 hours to predict the next 12 hours. If we predict only one hour, the results are much better as we see on the second the graph (Figure 4).
+There’s plenty of room to play around with the parameters of the Transformer, such as the number of decoder and encoder layers, etc. This was not intended to be a perfect model and with better tuning and training, the results would probably improve.
+It can be a big help to accelerate the training using GPUs. I used the Watson Studio Local Platform to train my model with GPUs and I let it run there rather than on my local machine. You can also accelerate the training using Watson’s Machine Learning GPUs which are free up to a certain amount of training time! Check out my previous blog to see how that can be integrated easily into your code.
+Thank you very much for reading this and I hope I was able to clarify a few notions to the people who are just starting to get into Deep Learning!
+
+
+Title: The Transformer Model - MachineLearningMastery.com
+Link: https://machinelearningmastery.com/the-transformer-model/
+Description: Sep 18, 2022 · Learn Transformers and Attention! Building Transformer Models with Attention. Teach your deep learning model to read a sentence ...using ...
+Full text:
+Last Updated on January 6, 2023
+We have already familiarized ourselves with the concept of self-attention as implemented by the Transformer attention mechanism for neural machine translation. We will now be shifting our focus to the details of the Transformer architecture itself to discover how self-attention can be implemented without relying on the use of recurrence and convolutions.
+In this tutorial, you will discover the network architecture of the Transformer model.
+After completing this tutorial, you will know:
+- How the Transformer architecture implements an encoder-decoder structure without recurrence and convolutions
+- How the Transformer encoder and decoder work
+- How the Transformer self-attention compares to the use of recurrent and convolutional layers
+Kick-start your project with my book Building Transformer Models with Attention. It provides self-study tutorials with working code to guide you into building a fully-working transformer model that can
+translate sentences from one language to another...
+Let’s get started.
+Tutorial Overview
+This tutorial is divided into three parts; they are:
+- The Transformer Architecture
+- The Encoder
+- The Decoder
+- Sum Up: The Transformer Model
+- Comparison to Recurrent and Convolutional Layers
+Prerequisites
+For this tutorial, we assume that you are already familiar with:
+The Transformer Architecture
+The Transformer architecture follows an encoder-decoder structure but does not rely on recurrence and convolutions in order to generate an output.
+In a nutshell, the task of the encoder, on the left half of the Transformer architecture, is to map an input sequence to a sequence of continuous representations, which is then fed into a decoder.
+The decoder, on the right half of the architecture, receives the output of the encoder together with the decoder output at the previous time step to generate an output sequence.
+At each step the model is auto-regressive, consuming the previously generated symbols as additional input when generating the next.
+– Attention Is All You Need, 2017.
+The Encoder
+The encoder consists of a stack of $N$ = 6 identical layers, where each layer is composed of two sublayers:
+- The first sublayer implements a multi-head self-attention mechanism. You have seen that the multi-head mechanism implements $h$ heads that receive a (different) linearly projected version of the queries, keys, and values, each to produce $h$ outputs in parallel that are then used to generate a final result.
+- The second sublayer is a fully connected feed-forward network consisting of two linear transformations with Rectified Linear Unit (ReLU) activation in between:
+$$\text{FFN}(x) = \text{ReLU}(\mathbf{W}_1 x + b_1) \mathbf{W}_2 + b_2$$
+The six layers of the Transformer encoder apply the same linear transformations to all the words in the input sequence, but each layer employs different weight ($\mathbf{W}_1, \mathbf{W}_2$) and bias ($b_1, b_2$) parameters to do so.
+Furthermore, each of these two sublayers has a residual connection around it.
+Each sublayer is also succeeded by a normalization layer, $\text{layernorm}(.)$, which normalizes the sum computed between the sublayer input, $x$, and the output generated by the sublayer itself, $\text{sublayer}(x)$:
+$$\text{layernorm}(x + \text{sublayer}(x))$$
+An important consideration to keep in mind is that the Transformer architecture cannot inherently capture any information about the relative positions of the words in the sequence since it does not make use of recurrence. This information has to be injected by introducing positional encodings to the input embeddings.
+The positional encoding vectors are of the same dimension as the input embeddings and are generated using sine and cosine functions of different frequencies. Then, they are simply summed to the input embeddings in order to inject the positional information.
+The Decoder
+The decoder shares several similarities with the encoder.
+The decoder also consists of a stack of $N$ = 6 identical layers that are each composed of three sublayers:
+- The first sublayer receives the previous output of the decoder stack, augments it with positional information, and implements multi-head self-attention over it. While the encoder is designed to attend to all words in the input sequence regardless of their position in the sequence, the decoder is modified to attend only to the preceding words. Hence, the prediction for a word at position $i$ can only depend on the known outputs for the words that come before it in the sequence. In the multi-head attention mechanism (which implements multiple, single attention functions in parallel), this is achieved by introducing a mask over the values produced by the scaled multiplication of matrices $\mathbf{Q}$ and $\mathbf{K}$. This masking is implemented by suppressing the matrix values that would otherwise correspond to illegal connections:
+$$
+\text{mask}(\mathbf{QK}^T) =
+\text{mask} \left( \begin{bmatrix}
+e_{11} & e_{12} & \dots & e_{1n} \\
+e_{21} & e_{22} & \dots & e_{2n} \\
+\vdots & \vdots & \ddots & \vdots \\
+e_{m1} & e_{m2} & \dots & e_{mn} \\
+\end{bmatrix} \right) =
+\begin{bmatrix}
+e_{11} & -\infty & \dots & -\infty \\
+e_{21} & e_{22} & \dots & -\infty \\
+\vdots & \vdots & \ddots & \vdots \\
+e_{m1} & e_{m2} & \dots & e_{mn} \\
+\end{bmatrix}
+$$
+The masking makes the decoder unidirectional (unlike the bidirectional encoder).
+– Advanced Deep Learning with Python, 2019.
+- The second layer implements a multi-head self-attention mechanism similar to the one implemented in the first sublayer of the encoder. On the decoder side, this multi-head mechanism receives the queries from the previous decoder sublayer and the keys and values from the output of the encoder. This allows the decoder to attend to all the words in the input sequence.
+- The third layer implements a fully connected feed-forward network, similar to the one implemented in the second sublayer of the encoder.
+Furthermore, the three sublayers on the decoder side also have residual connections around them and are succeeded by a normalization layer.
+Positional encodings are also added to the input embeddings of the decoder in the same manner as previously explained for the encoder.
+Want to Get Started With Building Transformer Models with Attention?
+Take my free 12-day email crash course now (with sample code).
+Click to sign-up and also get a free PDF Ebook version of the course.
+Sum Up: The Transformer Model
+The Transformer model runs as follows:
+- Each word forming an input sequence is transformed into a $d_{\text{model}}$-dimensional embedding vector.
+- Each embedding vector representing an input word is augmented by summing it (element-wise) to a positional encoding vector of the same $d_{\text{model}}$ length, hence introducing positional information into the input.
+- The augmented embedding vectors are fed into the encoder block consisting of the two sublayers explained above. Since the encoder attends to all words in the input sequence, irrespective if they precede or succeed the word under consideration, then the Transformer encoder is bidirectional.
+- The decoder receives as input its own predicted output word at time-step, $t – 1$.
+- The input to the decoder is also augmented by positional encoding in the same manner done on the encoder side.
+- The augmented decoder input is fed into the three sublayers comprising the decoder block explained above. Masking is applied in the first sublayer in order to stop the decoder from attending to the succeeding words. At the second sublayer, the decoder also receives the output of the encoder, which now allows the decoder to attend to all the words in the input sequence.
+- The output of the decoder finally passes through a fully connected layer, followed by a softmax layer, to generate a prediction for the next word of the output sequence.
+Comparison to Recurrent and Convolutional Layers
+Vaswani et al. (2017) explain that their motivation for abandoning the use of recurrence and convolutions was based on several factors:
+- Self-attention layers were found to be faster than recurrent layers for shorter sequence lengths and can be restricted to consider only a neighborhood in the input sequence for very long sequence lengths.
+- The number of sequential operations required by a recurrent layer is based on the sequence length, whereas this number remains constant for a self-attention layer.
+- In convolutional neural networks, the kernel width directly affects the long-term dependencies that can be established between pairs of input and output positions. Tracking long-term dependencies would require using large kernels or stacks of convolutional layers that could increase the computational cost.
+Further Reading
+This section provides more resources on the topic if you are looking to go deeper.
+Books
+Papers
+- Attention Is All You Need, 2017.
+Summary
+In this tutorial, you discovered the network architecture of the Transformer model.
+Specifically, you learned:
+- How the Transformer architecture implements an encoder-decoder structure without recurrence and convolutions
+- How the Transformer encoder and decoder work
+- How the Transformer self-attention compares to recurrent and convolutional layers
+Do you have any questions?
+Ask your questions in the comments below, and I will do my best to answer.
+
+
+Title: What Is a Transformer Model? | NVIDIA Blogs
+Link: https://blogs.nvidia.com/blog/2022/03/25/what-is-a-transformer-model/
+Description: Mar 25, 2022 · A transformer model is a neural network that learns context and thus meaning by tracking relationships in sequential data like the words in ...
+Full text:
+If you want to ride the next big wave in AI, grab a transformer.
+They’re not the shape-shifting toy robots on TV or the trash-can-sized tubs on telephone poles.
+So, What’s a Transformer Model?
+A transformer model is a neural network that learns context and thus meaning by tracking relationships in sequential data like the words in this sentence.
+Transformer models apply an evolving set of mathematical techniques, called attention or self-attention, to detect subtle ways even distant data elements in a series influence and depend on each other.
+First described in a 2017 paper from Google, transformers are among the newest and one of the most powerful classes of models invented to date. They’re driving a wave of advances in machine learning some have dubbed transformer AI.
+Stanford researchers called transformers “foundation models” in an August 2021 paper because they see them driving a paradigm shift in AI. The “sheer scale and scope of foundation models over the last few years have stretched our imagination of what is possible,” they wrote.
+What Can Transformer Models Do?
+Transformers are translating text and speech in near real-time, opening meetings and classrooms to diverse and hearing-impaired attendees.
+They’re helping researchers understand the chains of genes in DNA and amino acids in proteins in ways that can speed drug design.
+Transformers can detect trends and anomalies to prevent fraud, streamline manufacturing, make online recommendations or improve healthcare.
+People use transformers every time they search on Google or Microsoft Bing.
+The Virtuous Cycle of Transformer AI
+Any application using sequential text, image or video data is a candidate for transformer models.
+That enables these models to ride a virtuous cycle in transformer AI. Created with large datasets, transformers make accurate predictions that drive their wider use, generating more data that can be used to create even better models.
+“Transformers made self-supervised learning possible, and AI jumped to warp speed,” said NVIDIA founder and CEO Jensen Huang in his keynote address this week at GTC.
+Transformers Replace CNNs, RNNs
+Transformers are in many cases replacing convolutional and recurrent neural networks (CNNs and RNNs), the most popular types of deep learning models just five years ago.
+Indeed, 70 percent of arXiv papers on AI posted in the last two years mention transformers. That’s a radical shift from a 2017 IEEE study that reported RNNs and CNNs were the most popular models for pattern recognition.
+No Labels, More Performance
+Before transformers arrived, users had to train neural networks with large, labeled datasets that were costly and time-consuming to produce. By finding patterns between elements mathematically, transformers eliminate that need, making available the trillions of images and petabytes of text data on the web and in corporate databases.
+In addition, the math that transformers use lends itself to parallel processing, so these models can run fast.
+Transformers now dominate popular performance leaderboards like SuperGLUE, a benchmark developed in 2019 for language-processing systems.
+How Transformers Pay Attention
+Like most neural networks, transformer models are basically large encoder/decoder blocks that process data.
+Small but strategic additions to these blocks (shown in the diagram below) make transformers uniquely powerful.
+Transformers use positional encoders to tag data elements coming in and out of the network. Attention units follow these tags, calculating a kind of algebraic map of how each element relates to the others.
+Attention queries are typically executed in parallel by calculating a matrix of equations in what’s called multi-headed attention.
+With these tools, computers can see the same patterns humans see.
+Self-Attention Finds Meaning
+For example, in the sentence:
+She poured water from the pitcher to the cup until it was full.
+We know “it” refers to the cup, while in the sentence:
+She poured water from the pitcher to the cup until it was empty.
+We know “it” refers to the pitcher.
+“Meaning is a result of relationships between things, and self-attention is a general way of learning relationships,” said Ashish Vaswani, a former senior staff research scientist at Google Brain who led work on the seminal 2017 paper.
+“Machine translation was a good vehicle to validate self-attention because you needed short- and long-distance relationships among words,” said Vaswani.
+“Now we see self-attention is a powerful, flexible tool for learning,” he added.
+How Transformers Got Their Name
+Attention is so key to transformers the Google researchers almost used the term as the name for their 2017 model. Almost.
+“Attention Net didn’t sound very exciting,” said Vaswani, who started working with neural nets in 2011.
+.Jakob Uszkoreit, a senior software engineer on the team, came up with the name Transformer.
+“I argued we were transforming representations, but that was just playing semantics,” Vaswani said.
+The Birth of Transformers
+In the paper for the 2017 NeurIPS conference, the Google team described their transformer and the accuracy records it set for machine translation.
+Thanks to a basket of techniques, they trained their model in just 3.5 days on eight NVIDIA GPUs, a small fraction of the time and cost of training prior models. They trained it on datasets with up to a billion pairs of words.
+“It was an intense three-month sprint to the paper submission date,” recalled Aidan Gomez, a Google intern in 2017 who contributed to the work.
+“The night we were submitting, Ashish and I pulled an all-nighter at Google,” he said. “I caught a couple hours sleep in one of the small conference rooms, and I woke up just in time for the submission when someone coming in early to work opened the door and hit my head.”
+It was a wakeup call in more ways than one.
+“Ashish told me that night he was convinced this was going to be a huge deal, something game changing. I wasn’t convinced, I thought it would be a modest gain on a benchmark, but it turned out he was very right,” said Gomez, now CEO of startup Cohere that’s providing a language processing service based on transformers.
+A Moment for Machine Learning
+Vaswani recalls the excitement of seeing the results surpass similar work published by a Facebook team using CNNs.
+“I could see this would likely be an important moment in machine learning,” he said.
+A year later, another Google team tried processing text sequences both forward and backward with a transformer. That helped capture more relationships among words, improving the model’s ability to understand the meaning of a sentence.
+Their Bidirectional Encoder Representations from Transformers (BERT) model set 11 new records and became part of the algorithm behind Google search.
+Within weeks, researchers around the world were adapting BERT for use cases across many languages and industries “because text is one of the most common data types companies have,” said Anders Arpteg, a 20-year veteran of machine learning research.
+Putting Transformers to Work
+Soon transformer models were being adapted for science and healthcare.
+DeepMind, in London, advanced the understanding of proteins, the building blocks of life, using a transformer called AlphaFold2, described in a recent Nature article. It processed amino acid chains like text strings to set a new watermark for describing how proteins fold, work that could speed drug discovery.
+AstraZeneca and NVIDIA developed MegaMolBART, a transformer tailored for drug discovery. It’s a version of the pharmaceutical company’s MolBART transformer, trained on a large, unlabeled database of chemical compounds using the NVIDIA Megatron framework for building large-scale transformer models.
+Reading Molecules, Medical Records
+“Just as AI language models can learn the relationships between words in a sentence, our aim is that neural networks trained on molecular structure data will be able to learn the relationships between atoms in real-world molecules,” said Ola Engkvist, head of molecular AI, discovery sciences and R&D at AstraZeneca, when the work was announced last year.
+Separately, the University of Florida’s academic health center collaborated with NVIDIA researchers to create GatorTron. The transformer model aims to extract insights from massive volumes of clinical data to accelerate medical research.
+Transformers Grow Up
+Along the way, researchers found larger transformers performed better.
+For example, researchers from the Rostlab at the Technical University of Munich, which helped pioneer work at the intersection of AI and biology, used natural-language processing to understand proteins. In 18 months, they graduated from using RNNs with 90 million parameters to transformer models with 567 million parameters.
+The OpenAI lab showed bigger is better with its Generative Pretrained Transformer (GPT). The latest version, GPT-3, has 175 billion parameters, up from 1.5 billion for GPT-2.
+With the extra heft, GPT-3 can respond to a user’s query even on tasks it was not specifically trained to handle. It’s already being used by companies including Cisco, IBM and Salesforce.
+Tale of a Mega Transformer
+NVIDIA and Microsoft hit a high watermark in November, announcing the Megatron-Turing Natural Language Generation model (MT-NLG) with 530 billion parameters. It debuted along with a new framework, NVIDIA NeMo Megatron, that aims to let any business create its own billion- or trillion-parameter transformers to power custom chatbots, personal assistants and other AI applications that understand language.
+MT-NLG had its public debut as the brain for TJ, the Toy Jensen avatar that gave part of the keynote at NVIDIA’s November 2021 GTC.
+“When we saw TJ answer questions — the power of our work demonstrated by our CEO — that was exciting,” said Mostofa Patwary, who led the NVIDIA team that trained the model.
+Creating such models is not for the faint of heart. MT-NLG was trained using hundreds of billions of data elements, a process that required thousands of GPUs running for weeks.
+“Training large transformer models is expensive and time-consuming, so if you’re not successful the first or second time, projects might be canceled,” said Patwary.
+Trillion-Parameter Transformers
+Today, many AI engineers are working on trillion-parameter transformers and applications for them.
+“We’re constantly exploring how these big models can deliver better applications. We also investigate in what aspects they fail, so we can build even better and bigger ones,” Patwary said.
+To provide the computing muscle those models need, our latest accelerator — the NVIDIA H100 Tensor Core GPU — packs a Transformer Engine and supports a new FP8 format. That speeds training while preserving accuracy.
+With those and other advances, “transformer model training can be reduced from weeks to days” said Huang at GTC.
+MoE Means More for Transformers
+Last year, Google researchers described the Switch Transformer, one of the first trillion-parameter models. It uses AI sparsity, a complex mixture-of experts (MoE) architecture and other advances to drive performance gains in language processing and up to 7x increases in pre-training speed.
+For its part, Microsoft Azure worked with NVIDIA to implement an MoE transformer for its Translator service.
+Tackling Transformers’ Challenges
+Now some researchers aim to develop simpler transformers with fewer parameters that deliver performance similar to the largest models.
+“I see promise in retrieval-based models that I’m super excited about because they could bend the curve,” said Gomez, of Cohere, noting the Retro model from DeepMind as an example.
+Retrieval-based models learn by submitting queries to a database. “It’s cool because you can be choosy about what you put in that knowledge base,” he said.
+The ultimate goal is to “make these models learn like humans do from context in the real world with very little data,” said Vaswani, now co-founder of a stealth AI startup.
+He imagines future models that do more computation upfront so they need less data and sport better ways users can give them feedback.
+“Our goal is to build models that will help people in their everyday lives,” he said of his new venture.
+Safe, Responsible Models
+Other researchers are studying ways to eliminate bias or toxicity if models amplify wrong or harmful language. For example, Stanford created the Center for Research on Foundation Models to explore these issues.
+“These are important problems that need to be solved for safe deployment of models,” said Shrimai Prabhumoye, a research scientist at NVIDIA who’s among many across the industry working in the area.
+“Today, most models look for certain words or phrases, but in real life these issues may come out subtly, so we have to consider the whole context,” added Prabhumoye.
+“That’s a primary concern for Cohere, too,” said Gomez. “No one is going to use these models if they hurt people, so it’s table stakes to make the safest and most responsible models.”
+Beyond the Horizon
+Vaswani imagines a future where self-learning, attention-powered transformers approach the holy grail of AI.
+“We have a chance of achieving some of the goals people talked about when they coined the term ‘general artificial intelligence’ and I find that north star very inspiring,” he said.
+“We are in a time where simple methods like neural networks are giving us an explosion of new capabilities.”
+Learn more about transformers on the NVIDIA Technical Blog.
+
+
+Title: Transformer: A Novel Neural Network Architecture for Language ...
+Link: https://ai.googleblog.com/2017/08/transformer-novel-neural-network.html
+Description: Aug 31, 2017 · On top of higher translation quality, the Transformer requires less computation to train and is a much better fit for modern machine learning ...
+Full text:
+Neural networks, in particular recurrent neural networks (RNNs), are now at the core of the leading approaches to language understanding tasks such as language modeling, machine translation and question answering. In “Attention Is All You Need”, we introduce the Transformer, a novel neural network architecture based on a self-attention mechanism that we believe to be particularly well suited for language understanding.
+In our paper, we show that the Transformer outperforms both recurrent and convolutional models on academic English to German and English to French translation benchmarks. On top of higher translation quality, the Transformer requires less computation to train and is a much better fit for modern machine learning hardware, speeding up training by up to an order of magnitude.
+Accuracy and Efficiency in Language Understanding
+Neural networks usually process language by generating fixed- or variable-length vector-space representations. After starting with representations of individual words or even pieces of words, they aggregate information from surrounding words to determine the meaning of a given bit of language in context. For example, deciding on the most likely meaning and appropriate representation of the word “bank” in the sentence “I arrived at the bank after crossing the…” requires knowing if the sentence ends in “... road.” or “... river.”
+RNNs have in recent years become the typical network architecture for translation, processing language sequentially in a left-to-right or right-to-left fashion. Reading one word at a time, this forces RNNs to perform multiple steps to make decisions that depend on words far away from each other. Processing the example above, an RNN could only determine that “bank” is likely to refer to the bank of a river after reading each word between “bank” and “river” step by step. Prior research has shown that, roughly speaking, the more such steps decisions require, the harder it is for a recurrent network to learn how to make those decisions.
+The sequential nature of RNNs also makes it more difficult to fully take advantage of modern fast computing devices such as TPUs and GPUs, which excel at parallel and not sequential processing. Convolutional neural networks (CNNs) are much less sequential than RNNs, but in CNN architectures like ByteNet or ConvS2S the number of steps required to combine information from distant parts of the input still grows with increasing distance.
+The Transformer
+In contrast, the Transformer only performs a small, constant number of steps (chosen empirically). In each step, it applies a self-attention mechanism which directly models relationships between all words in a sentence, regardless of their respective position. In the earlier example “I arrived at the bank after crossing the river”, to determine that the word “bank” refers to the shore of a river and not a financial institution, the Transformer can learn to immediately attend to the word “river” and make this decision in a single step. In fact, in our English-French translation model we observe exactly this behavior.
+More specifically, to compute the next representation for a given word - “bank” for example - the Transformer compares it to every other word in the sentence. The result of these comparisons is an attention score for every other word in the sentence. These attention scores determine how much each of the other words should contribute to the next representation of “bank”. In the example, the disambiguating “river” could receive a high attention score when computing a new representation for “bank”. The attention scores are then used as weights for a weighted average of all words’ representations which is fed into a fully-connected network to generate a new representation for “bank”, reflecting that the sentence is talking about a river bank.
+The animation below illustrates how we apply the Transformer to machine translation. Neural networks for machine translation typically contain an encoder reading the input sentence and generating a representation of it. A decoder then generates the output sentence word by word while consulting the representation generated by the encoder. The Transformer starts by generating initial representations, or embeddings, for each word. These are represented by the unfilled circles. Then, using self-attention, it aggregates information from all of the other words, generating a new representation per word informed by the entire context, represented by the filled balls. This step is then repeated multiple times in parallel for all words, successively generating new representations.
+The decoder operates similarly, but generates one word at a time, from left to right. It attends not only to the other previously generated words, but also to the final representations generated by the encoder.
+Flow of Information
+Beyond computational performance and higher accuracy, another intriguing aspect of the Transformer is that we can visualize what other parts of a sentence the network attends to when processing or translating a given word, thus gaining insights into how information travels through the network.
+To illustrate this, we chose an example involving a phenomenon that is notoriously challenging for machine translation systems: coreference resolution. Consider the following sentences and their French translations:
+It is obvious to most that in the first sentence pair “it” refers to the animal, and in the second to the street. When translating these sentences to French or German, the translation for “it” depends on the gender of the noun it refers to - and in French “animal” and “street” have different genders. In contrast to the current Google Translate model, the Transformer translates both of these sentences to French correctly. Visualizing what words the encoder attended to when computing the final representation for the word “it” sheds some light on how the network made the decision. In one of its steps, the Transformer clearly identified the two nouns “it” could refer to and the respective amount of attention reflects its choice in the different contexts.
+Given this insight, it might not be that surprising that the Transformer also performs very well on the classic language analysis task of syntactic constituency parsing, a task the natural language processing community has attacked with highly specialized systems for decades.
+In fact, with little adaptation, the same network we used for English to German translation outperformed all but one of the previously proposed approaches to constituency parsing.
+Next Steps
+We are very excited about the future potential of the Transformer and have already started applying it to other problems involving not only natural language but also very different inputs and outputs, such as images and video. Our ongoing experiments are accelerated immensely by the Tensor2Tensor library, which we recently open sourced. In fact, after downloading the library you can train your own Transformer networks for translation and parsing by invoking just a few commands. We hope you’ll give it a try, and look forward to seeing what the community can do with the Transformer.
+Acknowledgements
+This research was conducted by Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N. Gomez, Łukasz Kaiser and Illia Polosukhin. Additional thanks go to David Chenell for creating the animation above.
+
+
+Title: Transformers Models in Machine Learning: Self-Attention to the ...
+Link: https://www.dominodatalab.com/blog/transformers-self-attention-to-the-rescue
+Description: May 25, 2022 · Transformers are a type of artificial neural network architecture that is used to solve the problem of transduction or transformation of input ...
+Full text:
+If the mention of "Transformers" brings to mind the adventures of autonomous robots in disguise you are probably, like me, a child of the 80s: Playing with Cybertronians who blend in as trucks, planes and even microcasette recorders or dinosaurs. As much as I would like to talk about that kind of transformers, the subject of this blog post is about the transformers proposed by Vaswani and team in the 2017 paper titled "Attention is all you need" . We will be covering what transformers are and how the idea of self-attention works. This will help us understand why transformers are taking over the world of machine learning and doing so not in disguise.
+What are Transformers Models?
+Transformers are a type of artificial neural network architecture that is used to solve the problem of transduction or transformation of input sequences into output sequences in deep learning applications. If you want to now more about deep learning you can take a look at our previous blog post where we covered some popular deep learning frameworks.
+You may be wondering what we mean by input and output sequences. Well, perhaps thinking of some applications may help. Think for example of speech recognition, protein structure prediction or machine translation. Let us concentrate in the latter: Given a sentence in English (sequence input) we want to find the translation into Japanese (sequence output) that has the same meaning (or as close as possible) as the original sentence. So the input sentence "Optimus Prime is a cool robot" would require us to produce the output "コンボイはかっこいいロボットです" (Yes, Optimus Prime is called Convoy/コンボイ in Japanese).
+Simply translating word by word in the order of appearance may result in an output that a human Japanese speaker would consider ungrammatical. For instance, in Japanese the verbs are placed at the end of the utterance, whereas this never happens in English. One of the main questions in sequence transduction is the learning of representations for both the input and output sequences in a robust manner, so that no distortions are introduced. You do not want to mistranslate an important message.
+An approach to tackle this challenge is the use of recurrent neural networks (RNNs). Unlike feed forward neural nets, where inputs and outputs are considered to be independent of each other, the output of an RNN depends on the prior elements of a given sequence. This is sometimes dubbed as "memory". Great as the results of RNNs may be, there are limitations in their use, for example finding out the length of the output sequence may be challenging given the fixed-sized input/output vector architecture of RNNs. A better approach is the use of a transformer.
+The magic of machine translation works thanks to two components in the architecture: the encoder and decoder. The former is the element that receives each component of the input sequence, encoding (hence the name) it into a vector carrying the context information about the whole sequence. This is sent to the decoder whose job is to understand the context and resolve the output meaningfully.
+Since the important information of the original sequence is carried in the context vector, we can see this as the most important part of the architecture. Similarly, it may be the cause of a "traffic jam" in the system. This is where the concept of attention comes into play. Originally proposed in 2015 by Minh-Thang Long, it enables your model to focus on the significant parts of the input sequence as required.
+Paying Attention
+As we can see, "memory" alone in the model (such as in an LSTM) may not be enough. We need "attention" to help further improve tasks such as machine translation be. Let us take a look at what attention does.
+In a sequence-to-sequence model the encoder passes only the last hidden state as the context to the decoder. When attention is used, the encoder passes not only the last hidden state, but actually all of them. This means that the decoder may have a bit more work to do than before. This extra processing is needed as now every hidden state received is associated with a given part of the input sequence. In our sample sentence "Optimus Prime is a cool robot" the first hidden state is related to the word "Optimus", the second to the word "Prime", the third one to "is" and so on. In this way, the decoder gets to do more, but also receives much more information.
+The job of the decoder is now to calculate the weight for each hidden state received by the encoder. This is done with the decoder's own hidden state, in other words, the output of the previous time step in the model. The aim is to provide greater importance to hidden states with higher weight values, and this is our new context vector. We can then use this context as input to the decoder’s feed forward neural net to obtain the output sequence we are after. In turn the output sequence is used as the hidden state of the decoder that is sued in the calculation of weights in the next time step.
+Looking Inwards - The Role of Self-Attention
+While attention is an important trick up the sleeve of the decoder, we may ask whether the encoder has any tricks of its own. The answer is yes and it is called self-attention. Like attention, self-attention tracks associations from the input sequence, but this time it is the encoder who keeps track of other items to achieve a better encoding. For instance, take the following input sentence:
+"Bumblebee plays some catchy music and dances along to it".
+If we only track the relationship of words that are close together, we can easily identify that the word "catchy" refers to the "music". If the tracking is only done between two consecutive words, we may end up in a situation where the word "it" at the end of the sentence loses its reference. To a human reader the "it" in the sentence is clearly referring to "music". In a situation with low self-attention however a translating machine may not know this.
+In self-attention, the encoder looks for clues in the other elements of the sentence as it processes them. In this way self-attention can be used to extract understanding of each of the processed elements in the sequence. After embedding each element for processing, we need three other components:
+- Key: Value \((k:v)\): A key is label for an element in our sequence, used to distinguish it from the others. Each key has an associated value
+- Query \((q)\): When we request specific information, we query the keys and select the best match for our request
+The understanding extraction is done with the following steps:
+- Calculate three arrays called query \(q\), key \(k\) and value \(v\) from matrices created at training time.
+- Obtain a score for each element in the input sequence given by the dot product \(q\cdot k\). Note that for the sentence above we would be calculating the score for query "bumblebee" with each of the values ["bumblebee", "plays", "some", "catchy", ...]. The score is scaled by dividing each result with a value \(\sqrt(d_k )\). A typical value is 8, but others can be used.
+- Ensure that the scores are normalised, positive and add up to 1. This can be done by applying a softmax function.
+- Multiply the value vector \(v\) by the normalised score from the previous step.
+- Finally add up all the results into a single vector and create the output of the self-attention. The result is passed to the feed forward neural network.
+Transformers and their Applications
+A transformer is a neural network architecture that exploits the concepts of attention and self-attention in a stack of encoders and decoders. In the original paper by Vaswani et al. the proposed architect used 6 encoders and 6 decoders. The first encoder would take the input vectors and process them with the self-attention layer before passing it to the feed forward neural net. In a typical architecture each encoder is composed of two parts: self-attention layer and feed forward neural net. Similarly, each decoder is composed of three parts: Self-attention layer, decoder attention layer and feed forward neural net. Once the work of the first encoder is done the result is passed to the next encoder and so on until the final encoder sends the information to the decoders and a similar process ensues.
+An important advantage of the transformer architecture over other neural networks, such as RNNs is that the presence of context around a word over a longer distance is done in a more efficient way. Furthermore, unlike RNNs the input data needn't be processed sequentially, enabling for parallelisation.
+Transformers are rapidly become the tool of choice in natural language processing (NLP) with some pre-trained models such as "Bidirectional Encoder Representations from Transformers" or BERT, and "Generative Pre-trained Transformer 3" or GPT-3 grabbing headlines. GPT-3 can generate new text based on the training data provided and it is said to be powering over 300 applications such as search, conversation, text completion, and more (see here).
+Although we have been giving examples of transformers in terms of machine translation, and indeed the architecture was originally developed for that purpose, there are applications for machine vision too. Take a look for instance at this post on image recognition at scale. Just as an NLP transformer uses words to learn about sentences, a machine vision transformer uses pixels to achieve a similar outcome for images.
+In the same way that GPT-3 generates new text, the machine vision counterpart would aim to generate new images based on the input provided. That is exactly what Jiang et al. have demonstrated with the use of a two-transformer model: When provided with faces of more than 200,000 celebrities, the model was able to generate new facial images with a moderate resolution.
+Other applications are surfacing, and one that we mentioned earlier on in this post is the prediction of protein structures. The publication of AlphaFold in 2021 demonstrated the "first computational method that can regularly predict protein structures with atomic accuracy even in cases in which no similar structure is known." The potential provided by transformers starts to open up the possibilities for multimodal processing, where applications will be able to use multiple types of data, combining media such as images and video, with language. See for example the proposal of VATT or Video-Audio-Text Transformer by Akbari et al.
+Accessing Models
+As the number of applications grow, access to a variety of frameworks and models is an important consideration when trying to implement transformers in our work. At the time of writing, a lot of transformer models are made available via open-source projects. For instance, BERT has been made available by Google Research here . An important exception is GPT-3 which is currently only available via OpenAI's API product offering.
+Given the widespread use of frameworks like TensorFlow, PyTorch or Keras it is not surprising that they already provide transformer models:
+- TensorFlow offers a number of text processing tools for text classification, text generation, or translation. Take a look here. Some tutorials are also available, for instance this one to translate Portuguese into English
+- PyTorch offers a library called PyTorch-Transformers with state-of-the-art pre-trained models, including BERT, GPT and GPT-2 (earlier iterations of GPT-3)
+- Keras users have made available some code samples for text classification, time series classification or speech recognition with transformers
+For a variety of pre-trained models you can take a look at Hugging Face and their transformers library with more than 100 models to chose from including BERT, RoBERTa (from Facebook), XLNet (from Carnegie Mellon University), DistilBERT (from HuggingFace themselves), DeBERTa (by Microsoft), Megatron-BERT or Megatron-GPT2 (both from NVIDIA).
+Summary
+Transformers have come to revolutionise the world of sequence-to-sequence modelling and started to percolate into a number of exciting applications where their encoder-decoder model provides advantages over other neural network architectures. Hinging on the concepts of attention and self-attention, transformers are able to provide wider range of context in a given sequence, improving results for important natural language processing tasks such as speech recognition or machine translation.
+Further more, in comparison to other sequential models, transformers are able to provide improved results as we are able to use parallelisation, letting us make the most of our GPUs pushing performance with great results. The next thing to do is to go and start having some fun with transformers; who knows, this may be much more fun than playing with robots in disguise.
+
+
+Title: How Transformers Work. Transformers are a type of neural…
+Link: https://towardsdatascience.com/transformers-141e32e69591
+Description: Transformers were developed to solve the problem of sequence transduction, or neural machine translation. That means any task that transforms an input sequence ...
+Full text:
+How Transformers Work
+The Neural Network used by Open AI and DeepMind
+If you liked this post and want to learn how machine learning algorithms work, how did they arise, and where are they going, I recommend the following:
+Making Things Think: How AI and Deep Learning Power the Products We Use - Holloway
+It is the obvious which is so difficult to see most of the time. People say 'It's as plain as the nose on your face.'…
+www.holloway.com
+Transformers are a type of neural network architecture that have been gaining popularity. Transformers were recently used by OpenAI in their language models, and also used recently by DeepMind for AlphaStar — their program to defeat a top professional Starcraft player.
+Transformers were developed to solve the problem of sequence transduction, or neural machine translation. That means any task that transforms an input sequence to an output sequence. This includes speech recognition, text-to-speech transformation, etc..
+For models to perform sequence transduction, it is necessary to have some sort of memory. For example let’s say that we are translating the following sentence to another language (French):
+“The Transformers” are a Japanese [[hardcore punk]] band. The band was formed in 1968, during the height of Japanese music history”
+In this example, the word “the band” in the second sentence refers to the band “The Transformers” introduced in the first sentence. When you read about the band in the second sentence, you know that it is referencing to the “The Transformers” band. That may be important for translation. There are many examples, where words in some sentences refer to words in previous sentences.
+For translating sentences like that, a model needs to figure out these sort of dependencies and connections. Recurrent Neural Networks (RNNs) and Convolutional Neural Networks (CNNs) have been used to deal with this problem because of their properties. Let’s go over these two architectures and their drawbacks.
+Recurrent Neural Networks
+Recurrent Neural Networks have loops in them, allowing information to persist.
+In the figure above, we see part of the neural network, A, processing some input x_t and outputs h_t. A loop allows information to be passed from one step to the next.
+The loops can be thought in a different way. A Recurrent Neural Network can be thought of as multiple copies of the same network, A, each network passing a message to a successor. Consider what happens if we unroll the loop:
+This chain-like nature shows that recurrent neural networks are clearly related to sequences and lists. In that way, if we want to translate some text, we can set each input as the word in that text. The Recurrent Neural Network passes the information of the previous words to the next network that can use and process that information.
+The following picture shows how usually a sequence to sequence model works using Recurrent Neural Networks. Each word is processed separately, and the resulting sentence is generated by passing a hidden state to the decoding stage that, then, generates the output.
+The problem of long-term dependencies
+Consider a language model that is trying to predict the next word based on the previous ones. If we are trying to predict the next word of the sentence “the clouds in the sky”, we don’t need further context. It’s pretty obvious that the next word is going to be sky.
+In this case where the difference between the relevant information and the place that is needed is small, RNNs can learn to use past information and figure out what is the next word for this sentence.
+But there are cases where we need more context. For example, let’s say that you are trying to predict the last word of the text: “I grew up in France… I speak fluent …”. Recent information suggests that the next word is probably a language, but if we want to narrow down which language, we need context of France, that is further back in the text.
+RNNs become very ineffective when the gap between the relevant information and the point where it is needed become very large. That is due to the fact that the information is passed at each step and the longer the chain is, the more probable the information is lost along the chain.
+In theory, RNNs could learn this long-term dependencies. In practice, they don’t seem to learn them. LSTM, a special type of RNN, tries to solve this kind of problem.
+Long-Short Term Memory (LSTM)
+When arranging one’s calendar for the day, we prioritize our appointments. If there is anything important, we can cancel some of the meetings and accommodate what is important.
+RNNs don’t do that. Whenever it adds new information, it transforms existing information completely by applying a function. The entire information is modified, and there is no consideration of what is important and what is not.
+LSTMs make small modifications to the information by multiplications and additions. With LSTMs, the information flows through a mechanism known as cell states. In this way, LSTMs can selectively remember or forget things that are important and not so important.
+Internally, a LSTM looks like the following:
+Each cell takes as inputs x_t (a word in the case of a sentence to sentence translation), the previous cell state and the output of the previous cell. It manipulates these inputs and based on them, it generates a new cell state, and an output. I won’t go into detail on the mechanics of each cell. If you want to understand how each cell works, I recommend Christopher’s blog post:
+Understanding LSTM Networks -- colah's blog
+These loops make recurrent neural networks seem kind of mysterious. However, if you think a bit more, it turns out that…
+colah.github.io
+With a cell state, the information in a sentence that is important for translating a word may be passed from one word to another, when translating.
+The problem with LSTMs
+The same problem that happens to RNNs generally, happen with LSTMs, i.e. when sentences are too long LSTMs still don’t do too well. The reason for that is that the probability of keeping the context from a word that is far away from the current word being processed decreases exponentially with the distance from it.
+That means that when sentences are long, the model often forgets the content of distant positions in the sequence. Another problem with RNNs, and LSTMs, is that it’s hard to parallelize the work for processing sentences, since you are have to process word by word. Not only that but there is no model of long and short range dependencies. To summarize, LSTMs and RNNs present 3 problems:
+- Sequential computation inhibits parallelization
+- No explicit modeling of long and short range dependencies
+- “Distance” between positions is linear
+Attention
+To solve some of these problems, researchers created a technique for paying attention to specific words.
+When translating a sentence, I pay special attention to the word I’m presently translating. When I’m transcribing an audio recording, I listen carefully to the segment I’m actively writing down. And if you ask me to describe the room I’m sitting in, I’ll glance around at the objects I’m describing as I do so.
+Neural networks can achieve this same behavior using attention, focusing on part of a subset of the information they are given. For example, an RNN can attend over the output of another RNN. At every time step, it focuses on different positions in the other RNN.
+To solve these problems, Attention is a technique that is used in a neural network. For RNNs, instead of only encoding the whole sentence in a hidden state, each word has a corresponding hidden state that is passed all the way to the decoding stage. Then, the hidden states are used at each step of the RNN to decode. The following gif shows how that happens.
+The idea behind it is that there might be relevant information in every word in a sentence. So in order for the decoding to be precise, it needs to take into account every word of the input, using attention.
+For attention to be brought to RNNs in sequence transduction, we divide the encoding and decoding into 2 main steps. One step is represented in green and the other in purple. The green step is called the encoding stage and the purple step is the decoding stage.
+The step in green in charge of creating the hidden states from the input. Instead of passing only one hidden state to the decoders as we did before using attention, we pass all the hidden states generated by every “word” of the sentence to the decoding stage. Each hidden state is used in the decoding stage, to figure out where the network should pay attention to.
+For example, when translating the sentence “Je suis étudiant” to English, requires that the decoding step looks at different words when translating it.
+Or for example, when you translate the sentence “L’accord sur la zone économique européenne a été signé en août 1992.” from French to English, and how much attention it is paid to each input.
+But some of the problems that we discussed, still are not solved with RNNs using attention. For example, processing inputs (words) in parallel is not possible. For a large corpus of text, this increases the time spent translating the text.
+Convolutional Neural Networks
+Convolutional Neural Networks help solve these problems. With them we can
+- Trivial to parallelize (per layer)
+- Exploits local dependencies
+- Distance between positions is logarithmic
+Some of the most popular neural networks for sequence transduction, Wavenet and Bytenet, are Convolutional Neural Networks.
+The reason why Convolutional Neural Networks can work in parallel, is that each word on the input can be processed at the same time and does not necessarily depend on the previous words to be translated. Not only that, but the “distance” between the output word and any input for a CNN is in the order of log(N) — that is the size of the height of the tree generated from the output to the input (you can see it on the GIF above. That is much better than the distance of the output of a RNN and an input, which is on the order of N.
+The problem is that Convolutional Neural Networks do not necessarily help with the problem of figuring out the problem of dependencies when translating sentences. That’s why Transformers were created, they are a combination of both CNNs with attention.
+Transformers
+To solve the problem of parallelization, Transformers try to solve the problem by using Convolutional Neural Networks together with attention models. Attention boosts the speed of how fast the model can translate from one sequence to another.
+Let’s take a look at how Transformer works. Transformer is a model that uses attention to boost the speed. More specifically, it uses self-attention.
+Internally, the Transformer has a similar kind of architecture as the previous models above. But the Transformer consists of six encoders and six decoders.
+Each encoder is very similar to each other. All encoders have the same architecture. Decoders share the same property, i.e. they are also very similar to each other. Each encoder consists of two layers: Self-attention and a feed Forward Neural Network.
+The encoder’s inputs first flow through a self-attention layer. It helps the encoder look at other words in the input sentence as it encodes a specific word. The decoder has both those layers, but between them is an attention layer that helps the decoder focus on relevant parts of the input sentence.
+Self-Attention
+Note: This section comes from Jay Allamar blog post
+Let’s start to look at the various vectors/tensors and how they flow between these components to turn the input of a trained model into an output. As is the case in NLP applications in general, we begin by turning each input word into a vector using an embedding algorithm.
+Each word is embedded into a vector of size 512. We’ll represent those vectors with these simple boxes.
+The embedding only happens in the bottom-most encoder. The abstraction that is common to all the encoders is that they receive a list of vectors each of the size 512.
+In the bottom encoder that would be the word embeddings, but in other encoders, it would be the output of the encoder that’s directly below. After embedding the words in our input sequence, each of them flows through each of the two layers of the encoder.
+Here we begin to see one key property of the Transformer, which is that the word in each position flows through its own path in the encoder. There are dependencies between these paths in the self-attention layer. The feed-forward layer does not have those dependencies, however, and thus the various paths can be executed in parallel while flowing through the feed-forward layer.
+Next, we’ll switch up the example to a shorter sentence and we’ll look at what happens in each sub-layer of the encoder.
+Self-Attention
+Let’s first look at how to calculate self-attention using vectors, then proceed to look at how it’s actually implemented — using matrices.
+The first step in calculating self-attention is to create three vectors from each of the encoder’s input vectors (in this case, the embedding of each word). So for each word, we create a Query vector, a Key vector, and a Value vector. These vectors are created by multiplying the embedding by three matrices that we trained during the training process.
+Notice that these new vectors are smaller in dimension than the embedding vector. Their dimensionality is 64, while the embedding and encoder input/output vectors have dimensionality of 512. They don’t HAVE to be smaller, this is an architecture choice to make the computation of multiheaded attention (mostly) constant.
+Multiplying x1 by the WQ weight matrix produces q1, the “query” vector associated with that word. We end up creating a “query”, a “key”, and a “value” projection of each word in the input sentence.
+What are the “query”, “key”, and “value” vectors?
+They’re abstractions that are useful for calculating and thinking about attention. Once you proceed with reading how attention is calculated below, you’ll know pretty much all you need to know about the role each of these vectors plays.
+The second step in calculating self-attention is to calculate a score. Say we’re calculating the self-attention for the first word in this example, “Thinking”. We need to score each word of the input sentence against this word. The score determines how much focus to place on other parts of the input sentence as we encode a word at a certain position.
+The score is calculated by taking the dot product of the query vector with the key vector of the respective word we’re scoring. So if we’re processing the self-attention for the word in position #1, the first score would be the dot product of q1 and k1. The second score would be the dot product of q1 and k2.
+The third and forth steps are to divide the scores by 8 (the square root of the dimension of the key vectors used in the paper — 64. This leads to having more stable gradients. There could be other possible values here, but this is the default), then pass the result through a softmax operation. Softmax normalizes the scores so they’re all positive and add up to 1.
+This softmax score determines how much how much each word will be expressed at this position. Clearly the word at this position will have the highest softmax score, but sometimes it’s useful to attend to another word that is relevant to the current word.
+The fifth step is to multiply each value vector by the softmax score (in preparation to sum them up). The intuition here is to keep intact the values of the word(s) we want to focus on, and drown-out irrelevant words (by multiplying them by tiny numbers like 0.001, for example).
+The sixth step is to sum up the weighted value vectors. This produces the output of the self-attention layer at this position (for the first word).
+That concludes the self-attention calculation. The resulting vector is one we can send along to the feed-forward neural network. In the actual implementation, however, this calculation is done in matrix form for faster processing. So let’s look at that now that we’ve seen the intuition of the calculation on the word level.
+Multihead attention
+Transformers basically work like that. There are a few other details that make them work better. For example, instead of only paying attention to each other in one dimension, Transformers use the concept of Multihead attention.
+The idea behind it is that whenever you are translating a word, you may pay different attention to each word based on the type of question that you are asking. The images below show what that means. For example, whenever you are translating “kicked” in the sentence “I kicked the ball”, you may ask “Who kicked”. Depending on the answer, the translation of the word to another language can change. Or ask other questions, like “Did what?”, etc…
+Positional Encoding
+Another important step on the Transformer is to add positional encoding when encoding each word. Encoding the position of each word is relevant, since the position of each word is relevant to the translation.
+Overview
+I gave an overview of how Transformers work and why this is the technique used for sequence transduction. If you want to understand in depth how the model works and all its nuances, I recommend the following posts, articles and videos that I used as a base for summarizing the technique
+- The Unreasonable Effectiveness of Recurrent Neural Networks
+- Understanding LSTM Networks
+- Visualizing A Neural Machine Translation Model
+- The Illustrated Transformer
+- The Transformer — Attention is all you need
+- The Annotated Transformer
+- Attention is all you need attentional neural network models
+- Self-Attention For Generative Models
+- OpenAI GPT-2: Understanding Language Generation through Visualization
+- WaveNet: A Generative Model for Raw Audio
+
+
+Title: What are Transformers (Machine Learning Model)? - YouTube
+Link: https://www.youtube.com/watch?v=ZXiruGOCn9s
+Description: Mar 11, 2022 · Learn more about Transformers → http://ibm.biz/ML-TransformersLearn more about AI → http ...Duration: 5:50Posted: Mar 11, 2022
+Full text:
+About
+Press
+Copyright
+Contact us
+Creators
+Advertise
+Developers
+Terms
+Privacy
+Policy & Safety
+How YouTube works
+Test new features
+NFL Sunday Ticket
+© 2023 Google LLC
+
+
+Title: The Illustrated Transformer - Jay Alammar
+Link: https://jalammar.github.io/illustrated-transformer/
+Description: Jun 27, 2018 · The Transformer outperforms the Google Neural Machine Translation model in specific tasks. The biggest benefit, however, comes from how The ...
+Full text:
+The Illustrated Transformer
+Discussions:
+Hacker News (65 points, 4 comments), Reddit r/MachineLearning (29 points, 3 comments)
+Translations: Arabic, Chinese (Simplified) 1, Chinese (Simplified) 2, French 1, French 2, Japanese, Korean, Persian, Russian, Spanish 1, Spanish 2, Vietnamese
+Watch: MIT’s Deep Learning State of the Art lecture referencing this post
+In the previous post, we looked at Attention – a ubiquitous method in modern deep learning models. Attention is a concept that helped improve the performance of neural machine translation applications. In this post, we will look at The Transformer – a model that uses attention to boost the speed with which these models can be trained. The Transformer outperforms the Google Neural Machine Translation model in specific tasks. The biggest benefit, however, comes from how The Transformer lends itself to parallelization. It is in fact Google Cloud’s recommendation to use The Transformer as a reference model to use their Cloud TPU offering. So let’s try to break the model apart and look at how it functions.
+The Transformer was proposed in the paper Attention is All You Need. A TensorFlow implementation of it is available as a part of the Tensor2Tensor package. Harvard’s NLP group created a guide annotating the paper with PyTorch implementation. In this post, we will attempt to oversimplify things a bit and introduce the concepts one by one to hopefully make it easier to understand to people without in-depth knowledge of the subject matter.
+2020 Update: I’ve created a “Narrated Transformer” video which is a gentler approach to the topic:
+A High-Level Look
+Let’s begin by looking at the model as a single black box. In a machine translation application, it would take a sentence in one language, and output its translation in another.
+Popping open that Optimus Prime goodness, we see an encoding component, a decoding component, and connections between them.
+The encoding component is a stack of encoders (the paper stacks six of them on top of each other – there’s nothing magical about the number six, one can definitely experiment with other arrangements). The decoding component is a stack of decoders of the same number.
+The encoders are all identical in structure (yet they do not share weights). Each one is broken down into two sub-layers:
+The encoder’s inputs first flow through a self-attention layer – a layer that helps the encoder look at other words in the input sentence as it encodes a specific word. We’ll look closer at self-attention later in the post.
+The outputs of the self-attention layer are fed to a feed-forward neural network. The exact same feed-forward network is independently applied to each position.
+The decoder has both those layers, but between them is an attention layer that helps the decoder focus on relevant parts of the input sentence (similar what attention does in seq2seq models).
+Bringing The Tensors Into The Picture
+Now that we’ve seen the major components of the model, let’s start to look at the various vectors/tensors and how they flow between these components to turn the input of a trained model into an output.
+As is the case in NLP applications in general, we begin by turning each input word into a vector using an embedding algorithm.
+Each word is embedded into a vector of size 512. We'll represent those vectors with these simple boxes.
+The embedding only happens in the bottom-most encoder. The abstraction that is common to all the encoders is that they receive a list of vectors each of the size 512 – In the bottom encoder that would be the word embeddings, but in other encoders, it would be the output of the encoder that’s directly below. The size of this list is hyperparameter we can set – basically it would be the length of the longest sentence in our training dataset.
+After embedding the words in our input sequence, each of them flows through each of the two layers of the encoder.
+Here we begin to see one key property of the Transformer, which is that the word in each position flows through its own path in the encoder. There are dependencies between these paths in the self-attention layer. The feed-forward layer does not have those dependencies, however, and thus the various paths can be executed in parallel while flowing through the feed-forward layer.
+Next, we’ll switch up the example to a shorter sentence and we’ll look at what happens in each sub-layer of the encoder.
+Now We’re Encoding!
+As we’ve mentioned already, an encoder receives a list of vectors as input. It processes this list by passing these vectors into a ‘self-attention’ layer, then into a feed-forward neural network, then sends out the output upwards to the next encoder.
+The word at each position passes through a self-attention process. Then, they each pass through a feed-forward neural network -- the exact same network with each vector flowing through it separately.
+Self-Attention at a High Level
+Don’t be fooled by me throwing around the word “self-attention” like it’s a concept everyone should be familiar with. I had personally never came across the concept until reading the Attention is All You Need paper. Let us distill how it works.
+Say the following sentence is an input sentence we want to translate:
+”
+The animal didn't cross the street because it was too tired”
+What does “it” in this sentence refer to? Is it referring to the street or to the animal? It’s a simple question to a human, but not as simple to an algorithm.
+When the model is processing the word “it”, self-attention allows it to associate “it” with “animal”.
+As the model processes each word (each position in the input sequence), self attention allows it to look at other positions in the input sequence for clues that can help lead to a better encoding for this word.
+If you’re familiar with RNNs, think of how maintaining a hidden state allows an RNN to incorporate its representation of previous words/vectors it has processed with the current one it’s processing. Self-attention is the method the Transformer uses to bake the “understanding” of other relevant words into the one we’re currently processing.
+As we are encoding the word "it" in encoder #5 (the top encoder in the stack), part of the attention mechanism was focusing on "The Animal", and baked a part of its representation into the encoding of "it".
+Be sure to check out the Tensor2Tensor notebook where you can load a Transformer model, and examine it using this interactive visualization.
+Self-Attention in Detail
+Let’s first look at how to calculate self-attention using vectors, then proceed to look at how it’s actually implemented – using matrices.
+The first step in calculating self-attention is to create three vectors from each of the encoder’s input vectors (in this case, the embedding of each word). So for each word, we create a Query vector, a Key vector, and a Value vector. These vectors are created by multiplying the embedding by three matrices that we trained during the training process.
+Notice that these new vectors are smaller in dimension than the embedding vector. Their dimensionality is 64, while the embedding and encoder input/output vectors have dimensionality of 512. They don’t HAVE to be smaller, this is an architecture choice to make the computation of multiheaded attention (mostly) constant.
+Multiplying x1 by the WQ weight matrix produces q1, the "query" vector associated with that word. We end up creating a "query", a "key", and a "value" projection of each word in the input sentence.
+What are the “query”, “key”, and “value” vectors?
+They’re abstractions that are useful for calculating and thinking about attention. Once you proceed with reading how attention is calculated below, you’ll know pretty much all you need to know about the role each of these vectors plays.
+The second step in calculating self-attention is to calculate a score. Say we’re calculating the self-attention for the first word in this example, “Thinking”. We need to score each word of the input sentence against this word. The score determines how much focus to place on other parts of the input sentence as we encode a word at a certain position.
+The score is calculated by taking the dot product of the query vector with the key vector of the respective word we’re scoring. So if we’re processing the self-attention for the word in position #1, the first score would be the dot product of q1 and k1. The second score would be the dot product of q1 and k2.
+The third and fourth steps are to divide the scores by 8 (the square root of the dimension of the key vectors used in the paper – 64. This leads to having more stable gradients. There could be other possible values here, but this is the default), then pass the result through a softmax operation. Softmax normalizes the scores so they’re all positive and add up to 1.
+This softmax score determines how much each word will be expressed at this position. Clearly the word at this position will have the highest softmax score, but sometimes it’s useful to attend to another word that is relevant to the current word.
+The fifth step is to multiply each value vector by the softmax score (in preparation to sum them up). The intuition here is to keep intact the values of the word(s) we want to focus on, and drown-out irrelevant words (by multiplying them by tiny numbers like 0.001, for example).
+The sixth step is to sum up the weighted value vectors. This produces the output of the self-attention layer at this position (for the first word).
+That concludes the self-attention calculation. The resulting vector is one we can send along to the feed-forward neural network. In the actual implementation, however, this calculation is done in matrix form for faster processing. So let’s look at that now that we’ve seen the intuition of the calculation on the word level.
+Matrix Calculation of Self-Attention
+The first step is to calculate the Query, Key, and Value matrices. We do that by packing our embeddings into a matrix X, and multiplying it by the weight matrices we’ve trained (WQ, WK, WV).
+Every row in the X matrix corresponds to a word in the input sentence. We again see the difference in size of the embedding vector (512, or 4 boxes in the figure), and the q/k/v vectors (64, or 3 boxes in the figure)
+Finally, since we’re dealing with matrices, we can condense steps two through six in one formula to calculate the outputs of the self-attention layer.
+The self-attention calculation in matrix form
+The Beast With Many Heads
+The paper further refined the self-attention layer by adding a mechanism called “multi-headed” attention. This improves the performance of the attention layer in two ways:
+-
+It expands the model’s ability to focus on different positions. Yes, in the example above, z1 contains a little bit of every other encoding, but it could be dominated by the actual word itself. If we’re translating a sentence like “The animal didn’t cross the street because it was too tired”, it would be useful to know which word “it” refers to.
+-
+It gives the attention layer multiple “representation subspaces”. As we’ll see next, with multi-headed attention we have not only one, but multiple sets of Query/Key/Value weight matrices (the Transformer uses eight attention heads, so we end up with eight sets for each encoder/decoder). Each of these sets is randomly initialized. Then, after training, each set is used to project the input embeddings (or vectors from lower encoders/decoders) into a different representation subspace.
+With multi-headed attention, we maintain separate Q/K/V weight matrices for each head resulting in different Q/K/V matrices. As we did before, we multiply X by the WQ/WK/WV matrices to produce Q/K/V matrices.
+If we do the same self-attention calculation we outlined above, just eight different times with different weight matrices, we end up with eight different Z matrices
+This leaves us with a bit of a challenge. The feed-forward layer is not expecting eight matrices – it’s expecting a single matrix (a vector for each word). So we need a way to condense these eight down into a single matrix.
+How do we do that? We concat the matrices then multiply them by an additional weights matrix WO.
+That’s pretty much all there is to multi-headed self-attention. It’s quite a handful of matrices, I realize. Let me try to put them all in one visual so we can look at them in one place
+Now that we have touched upon attention heads, let’s revisit our example from before to see where the different attention heads are focusing as we encode the word “it” in our example sentence:
+As we encode the word "it", one attention head is focusing most on "the animal", while another is focusing on "tired" -- in a sense, the model's representation of the word "it" bakes in some of the representation of both "animal" and "tired".
+If we add all the attention heads to the picture, however, things can be harder to interpret:
+Representing The Order of The Sequence Using Positional Encoding
+One thing that’s missing from the model as we have described it so far is a way to account for the order of the words in the input sequence.
+To address this, the transformer adds a vector to each input embedding. These vectors follow a specific pattern that the model learns, which helps it determine the position of each word, or the distance between different words in the sequence. The intuition here is that adding these values to the embeddings provides meaningful distances between the embedding vectors once they’re projected into Q/K/V vectors and during dot-product attention.
+To give the model a sense of the order of the words, we add positional encoding vectors -- the values of which follow a specific pattern.
+If we assumed the embedding has a dimensionality of 4, the actual positional encodings would look like this:
+A real example of positional encoding with a toy embedding size of 4
+What might this pattern look like?
+In the following figure, each row corresponds to a positional encoding of a vector. So the first row would be the vector we’d add to the embedding of the first word in an input sequence. Each row contains 512 values – each with a value between 1 and -1. We’ve color-coded them so the pattern is visible.
+A real example of positional encoding for 20 words (rows) with an embedding size of 512 (columns). You can see that it appears split in half down the center. That's because the values of the left half are generated by one function (which uses sine), and the right half is generated by another function (which uses cosine). They're then concatenated to form each of the positional encoding vectors.
+The formula for positional encoding is described in the paper (section 3.5). You can see the code for generating positional encodings in
+get_timing_signal_1d(). This is not the only possible method for positional encoding. It, however, gives the advantage of being able to scale to unseen lengths of sequences (e.g. if our trained model is asked to translate a sentence longer than any of those in our training set).
+July 2020 Update: The positional encoding shown above is from the Tranformer2Transformer implementation of the Transformer. The method shown in the paper is slightly different in that it doesn’t directly concatenate, but interweaves the two signals. The following figure shows what that looks like. Here’s the code to generate it:
+The Residuals
+One detail in the architecture of the encoder that we need to mention before moving on, is that each sub-layer (self-attention, ffnn) in each encoder has a residual connection around it, and is followed by a layer-normalization step.
+If we’re to visualize the vectors and the layer-norm operation associated with self attention, it would look like this:
+This goes for the sub-layers of the decoder as well. If we’re to think of a Transformer of 2 stacked encoders and decoders, it would look something like this:
+The Decoder Side
+Now that we’ve covered most of the concepts on the encoder side, we basically know how the components of decoders work as well. But let’s take a look at how they work together.
+The encoder start by processing the input sequence. The output of the top encoder is then transformed into a set of attention vectors K and V. These are to be used by each decoder in its “encoder-decoder attention” layer which helps the decoder focus on appropriate places in the input sequence:
+After finishing the encoding phase, we begin the decoding phase. Each step in the decoding phase outputs an element from the output sequence (the English translation sentence in this case).
+The following steps repeat the process until a special
+The self attention layers in the decoder operate in a slightly different way than the one in the encoder:
+In the decoder, the self-attention layer is only allowed to attend to earlier positions in the output sequence. This is done by masking future positions (setting them to
+-inf) before the softmax step in the self-attention calculation.
+The “Encoder-Decoder Attention” layer works just like multiheaded self-attention, except it creates its Queries matrix from the layer below it, and takes the Keys and Values matrix from the output of the encoder stack.
+The Final Linear and Softmax Layer
+The decoder stack outputs a vector of floats. How do we turn that into a word? That’s the job of the final Linear layer which is followed by a Softmax Layer.
+The Linear layer is a simple fully connected neural network that projects the vector produced by the stack of decoders, into a much, much larger vector called a logits vector.
+Let’s assume that our model knows 10,000 unique English words (our model’s “output vocabulary”) that it’s learned from its training dataset. This would make the logits vector 10,000 cells wide – each cell corresponding to the score of a unique word. That is how we interpret the output of the model followed by the Linear layer.
+The softmax layer then turns those scores into probabilities (all positive, all add up to 1.0). The cell with the highest probability is chosen, and the word associated with it is produced as the output for this time step.
+This figure starts from the bottom with the vector produced as the output of the decoder stack. It is then turned into an output word.
+Recap Of Training
+Now that we’ve covered the entire forward-pass process through a trained Transformer, it would be useful to glance at the intuition of training the model.
+During training, an untrained model would go through the exact same forward pass. But since we are training it on a labeled training dataset, we can compare its output with the actual correct output.
+To visualize this, let’s assume our output vocabulary only contains six words(“a”, “am”, “i”, “thanks”, “student”, and “<eos>” (short for ‘end of sentence’)).
+The output vocabulary of our model is created in the preprocessing phase before we even begin training.
+Once we define our output vocabulary, we can use a vector of the same width to indicate each word in our vocabulary. This also known as one-hot encoding. So for example, we can indicate the word “am” using the following vector:
+Example: one-hot encoding of our output vocabulary
+Following this recap, let’s discuss the model’s loss function – the metric we are optimizing during the training phase to lead up to a trained and hopefully amazingly accurate model.
+The Loss Function
+Say we are training our model. Say it’s our first step in the training phase, and we’re training it on a simple example – translating “merci” into “thanks”.
+What this means, is that we want the output to be a probability distribution indicating the word “thanks”. But since this model is not yet trained, that’s unlikely to happen just yet.
+Since the model's parameters (weights) are all initialized randomly, the (untrained) model produces a probability distribution with arbitrary values for each cell/word. We can compare it with the actual output, then tweak all the model's weights using backpropagation to make the output closer to the desired output.
+How do you compare two probability distributions? We simply subtract one from the other. For more details, look at cross-entropy and Kullback–Leibler divergence.
+But note that this is an oversimplified example. More realistically, we’ll use a sentence longer than one word. For example – input: “je suis étudiant” and expected output: “i am a student”. What this really means, is that we want our model to successively output probability distributions where:
+- Each probability distribution is represented by a vector of width vocab_size (6 in our toy example, but more realistically a number like 30,000 or 50,000)
+- The first probability distribution has the highest probability at the cell associated with the word “i”
+- The second probability distribution has the highest probability at the cell associated with the word “am”
+- And so on, until the fifth output distribution indicates ‘
+<end of sentence>’ symbol, which also has a cell associated with it from the 10,000 element vocabulary.
+The targeted probability distributions we'll train our model against in the training example for one sample sentence.
+After training the model for enough time on a large enough dataset, we would hope the produced probability distributions would look like this:
+Hopefully upon training, the model would output the right translation we expect. Of course it's no real indication if this phrase was part of the training dataset (see: cross validation). Notice that every position gets a little bit of probability even if it's unlikely to be the output of that time step -- that's a very useful property of softmax which helps the training process.
+Now, because the model produces the outputs one at a time, we can assume that the model is selecting the word with the highest probability from that probability distribution and throwing away the rest. That’s one way to do it (called greedy decoding). Another way to do it would be to hold on to, say, the top two words (say, ‘I’ and ‘a’ for example), then in the next step, run the model twice: once assuming the first output position was the word ‘I’, and another time assuming the first output position was the word ‘a’, and whichever version produced less error considering both positions #1 and #2 is kept. We repeat this for positions #2 and #3…etc. This method is called “beam search”, where in our example, beam_size was two (meaning that at all times, two partial hypotheses (unfinished translations) are kept in memory), and top_beams is also two (meaning we’ll return two translations). These are both hyperparameters that you can experiment with.
+Go Forth And Transform
+I hope you’ve found this a useful place to start to break the ice with the major concepts of the Transformer. If you want to go deeper, I’d suggest these next steps:
+- Read the Attention Is All You Need paper, the Transformer blog post (Transformer: A Novel Neural Network Architecture for Language Understanding), and the Tensor2Tensor announcement.
+- Watch Łukasz Kaiser’s talk walking through the model and its details
+- Play with the Jupyter Notebook provided as part of the Tensor2Tensor repo
+- Explore the Tensor2Tensor repo.
+Follow-up works:
+- Depthwise Separable Convolutions for Neural Machine Translation
+- One Model To Learn Them All
+- Discrete Autoencoders for Sequence Models
+- Generating Wikipedia by Summarizing Long Sequences
+- Image Transformer
+- Training Tips for the Transformer Model
+- Self-Attention with Relative Position Representations
+- Fast Decoding in Sequence Models using Discrete Latent Variables
+- Adafactor: Adaptive Learning Rates with Sublinear Memory Cost
+Acknowledgements
+Thanks to Illia Polosukhin, Jakob Uszkoreit, Llion Jones , Lukasz Kaiser, Niki Parmar, and Noam Shazeer for providing feedback on earlier versions of this post.
+Please hit me up on Twitter for any corrections or feedback.
+
+
+Title: Machine learning: What is the transformer architecture? - TechTalks
+Link: https://bdtechtalks.com/2022/05/02/what-is-the-transformer/
+Description: May 2, 2022 · In recent years, the transformer model has become one of the main highlights of advances in deep learning and deep neural networks.
+Full text:
+This article is part of Demystifying AI, a series of posts that (try to) disambiguate the jargon and myths surrounding AI. (In partnership with Paperspace)
+In recent years, the transformer model has become one of the main highlights of advances in deep learning and deep neural networks. It is mainly used for advanced applications in natural language processing. Google is using it to enhance its search engine results. OpenAI has used transformers to create its famous GPT-2 and GPT-3 models.
+Since its debut in 2017, the transformer architecture has evolved and branched out into many different variants, expanding beyond language tasks into other areas. They have been used for time series forecasting. They are the key innovation behind AlphaFold, DeepMind’s protein structure prediction model. Codex, OpenAI’s source code–generation model, is based on transformers. More recently, transformers have found their way into computer vision, where they are slowly replacing convolutional neural networks (CNN) in many complicated tasks.
+Researchers are still exploring ways to improve transformers and use them in new applications. Here is a brief explainer about what makes transformers exciting and how they work.
+Processing sequences with neural networks
+The classic feed-forward neural network is not designed to keep track of sequential data and maps each input into an output. This works for tasks such as classifying images but fails on sequential data such as text. A machine learning model that processes text must not only compute every word but also take into consideration how words come in sequences and relate to each other. The meaning of words can change depending on other words that come before and after them in the sentence.
+Before transformers, recurrent neural networks (RNN) were the go-to solution for natural language processing. When provided with a sequence of words, an RNN processes the first word and feeds back the result into the layer that processes the next word. This enables it to keep track of the entire sentence instead of processing each word separately.
+Recurrent neural nets had disadvantages that limited their usefulness. First, they were very slow. Since they had to process data sequentially, they could not take advantage of parallel computing hardware and graphics processing units (GPU) in training and inference. Second, they could not handle long sequences of text. As the RNN got deeper into a text excerpt, the effects of the first words of the sentence gradually faded. This problem, known as “vanishing gradients,” was problematic when two linked words were very far apart in the text. And third, they only captured the relations between a word and the words that came before it. In reality, the meaning of words depends on the words that come both before and after them.
+Long short-term memory (LSTM) networks, the successor to RNNs, were able to solve the vanishing gradients problem to some degree and were able to handle larger sequences of text. But LSTMs were even slower to train than RNNs and still couldn’t take full advantage of parallel computing. They still relied on the serial processing of text sequences.
+Transformers, introduced in the 2017 paper “Attention Is All You Need,” made two key contributions. First, they made it possible to process entire sequences in parallel, making it possible to scale the speed and capacity of sequential deep learning models to unprecedented rates. And second, they introduced “attention mechanisms” that made it possible to track the relations between words across very long text sequences in both forward and reverse directions.
+Processing sequences with neural networks
+Before we discuss how the transformer model works, it is worth discussing the types of problems that sequential neural networks solve.
+A “vector to sequence” model takes a single input, such as an image, and produces a sequence of data, such as a description.
+A “sequence to vector” model takes a sequence as input, such as a product review or a social media post, and outputs a single value, such as a sentiment score.
+A “sequence to sequence” model takes a sequence as input, such as an English sentence, and outputs another sequence, such as the French translation of the sentence.
+Despite their differences, all these types of models have one thing in common. They learn representations. The job of a neural network is to transform one type of data into another. During training, the hidden layers of the neural network (the layers that stand between the input and output) tune their parameters in a way that best represents the features of the input data type and maps it to the output.
+The original transformer was designed as a sequence-to-sequence (seq2seq) model for machine translation (of course, seq2seq models are not limited to translation tasks). It is composed of an encoder module that compresses an input string from the source language into a vector that represents the words and their relations to each other. The decoder module transforms the encoded vector into a string of text in the destination language.
+Tokens and embeddings
+The input text must be processed and transformed into a unified format before being fed to the transformer. First, the text goes through a “tokenizer,” which breaks it down into chunks of characters that can be processed separately. The tokenization algorithm can depend on the application. In most cases, every word and punctuation mark roughly counts as one token. Some suffixes and prefixes count as separate tokens (e.g., “ize,” “ly,” and “pre”). The tokenizer produces a list of numbers that represent the token IDs of the input text.
+The tokens are then converted into “word embeddings.” A word embedding is a vector that tries to capture the value of words in a multi-dimensional space. For example, the words “cat” and “dog” can have similar values across some dimensions because they are both used in sentences that are about animals and house pets. However, “cat” is closer to “lion” than “wolf” across some other dimension that separates felines from canids. Similarly, “Paris” and “London” might be close to each other because they are both cities. However, “London” is closer to “England” and “Paris” to “France” on a dimension that separates countries. Word embeddings usually have hundreds of dimensions.
+Word embeddings are created by embedding models, which are trained separately from the transformer. There are several pre-trained embedding models that are used for language tasks.
+Attention layers
+Once the sentence is transformed into a list of word embeddings, it is fed into the transformer’s encoder module. Unlike RNN and LSTM models, the transformer does not receive one input at a time. It can receive an entire sentence’s worth of embedding values and process them in parallel. This makes transformers more compute-efficient than their predecessors and also enables them to examine the context of the text in both forward and backward sequences.
+To preserve the sequential nature of the words in the sentence, the transformer applies “positional encoding,” which basically means that it modifies the values of each embedding vector to represent its location in the text.
+Next, the input is passed to the first encoder block, which processes it through an “attention layer.” The attention layer tries to capture the relations between the words in the sentence. For example, consider the sentence “The big black cat crossed the road after it dropped a bottle on its side.” Here, the model must associate “it” with “cat” and “its” with “bottle.” Accordingly, it should establish other associations such as “big” and “cat” or “crossed” and “cat.” Otherwise put, the attention layer receives a list of word embeddings that represent the values of individual words and produces a list of vectors that represent both individual words and their relations to each other. The attention layer contains multiple “attention heads,” each of which can capture different kinds of relations between words.
+The output of the attention layer is fed to a feed-forward neural network that transforms it into a vector representation and sends it to the next attention layer. Transformers contain several blocks of attention and feed-forward layers to gradually capture more complicated relationships.
+The task of the decoder module is to translate the encoder’s attention vector into the output data (e.g., the translated version of the input text). During the training phase, the decoder has access both to the attention vector produced by the encoder and the expected outcome (e.g., the translated string).
+The decoder uses the same tokenization, word embedding, and attention mechanism to process the expected outcome and create attention vectors. It then passes this attention vector and the attention layer in the encoder module, which establishes relations between the input and output values. In the translation application, this is the part where the words from the source and destination languages are mapped to each other. Like the encoder module, the decoder attention vector is passed through a feed-forward layer. Its result is then mapped to a very large vector which is the size of the target data (in the case of language translation, this can span across tens of thousands of words).
+Training the transformer
+During training, the transformer is provided with a very large corpus of paired examples (e.g., English sentences and their corresponding French translations). The encoder module receives and processes the full input string. The decoder, however, receives a masked version of the output string, one word at a time, and tries to establish the mappings between the encoded attention vector and the expected outcome. The encoder tries to predict the next word and makes corrections based on the difference between its output and the expected outcome. This feedback enables the transformer to modify the parameters of the encoder and decoder and gradually create the right mappings between the input and output languages.
+The more training data and parameters the transformer has, the more capacity it gains to maintain coherence and consistency across long sequences of text.
+Variations of the transformer
+In the machine translation example that we examined above, the encoder module of the transformer learned the relations between English words and sentences, and the decoder learns the mappings between English and French.
+But not all transformer applications require both the encoder and decoder module. For example, the GPT family of large language models uses stacks of decoder modules to generate text. BERT, another variation of the transformer model developed by researchers at Google, only uses encoder modules.
+The advantage of some of these architectures is that they can be trained through self-supervised learning or unsupervised methods. BERT, for example, does much of its training by taking large corpora of unlabeled text, masking parts of it, and trying to predict the missing parts. It then tunes its parameters based on how much its predictions were close to or far from the actual data. By continuously going through this process, BERT captures the statistical relations between different words in different contexts. After this pretraining phase, BERT can be finetuned for a downstream task such as question answering, text summarization, or sentiment analysis by training it on a small number of labeled examples.
+Using unsupervised and self-supervised pretraining reduces the manual effort required to annotate training data.
+A lot more can be said about transformers and the new applications they are unlocking, which is out of the scope of this article. Researchers are still finding ways to squeeze more out of transformers.
+Transformers have also created discussions about language understanding and artificial general intelligence. What is clear is that transformers, like other neural networks, are statistical models that capture regularities in data in clever and complicated ways. They do not “understand” language in the way that humans do. But they are exciting and useful nonetheless and have a lot to offer.
+

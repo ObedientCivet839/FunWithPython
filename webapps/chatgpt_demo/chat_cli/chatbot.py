@@ -2,19 +2,8 @@ from prompt_toolkit import prompt
 from prompt_toolkit.history import FileHistory
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 
-import os
+from gpt import request
 import openai
-
-# openai.api_key = os.getenv("OPENAI_API_KEY")
-openai.api_key_path = './.env'
-
-def request(text):
-    response = openai.Completion.create(
-        model="text-davinci-003",
-        prompt=text,
-        temperature=0.6,
-    )
-    return response
 
 class ChatBot:
     def __init__(self):
