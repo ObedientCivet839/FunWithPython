@@ -37,6 +37,5 @@ while True:
         '> ',
         history=FileHistory('history.txt'),
         auto_suggest=AutoSuggestFromHistory())
-    # print(user_input)
     response = bot.chat_request(user_input)
     print(response)
