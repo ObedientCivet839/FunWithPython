@@ -3,6 +3,7 @@ from prompt_toolkit.history import FileHistory
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 
 from scrape import searchKeyword
+import os
 
 class SearchBot:
     def __init__(self):
@@ -26,7 +27,11 @@ class SearchBot:
         return content
 
     def write_to_file(self, filename, content):
-        outputFile = open(filename + ".txt", "w")
+        outputdir = "search_results"
+        if not os.path.exists(outputdir):
+            # print("Creating output directory..")
+            os.makedirs(outputdir)
+        outputFile = open(outputdir + "/" + filename + ".txt", "w")
         outputFile.write(content)
         outputFile.close()
     
