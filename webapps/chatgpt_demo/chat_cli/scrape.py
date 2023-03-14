@@ -14,11 +14,11 @@ def searchKeyword(query):
     return ans
 
 class Result:
-    def __init__(self, descriptions, links, titles):
+    def __init__(self, descriptions, link, titles):
         self._desc = descriptions
-        self._ln = links
+        self._ln = link
         self._tl = titles
-        self._ft = self.getFullText(links)
+        self._ft = self.getFullText(link)
     
     def __str__(self):
         res = "Title: " + self._tl + "\n"
@@ -34,3 +34,51 @@ class Result:
         downloaded = fetch_url(url)
         result = extract(downloaded, include_comments=False, include_tables=False, include_links=False)
         return result
+
+ 
+from bs4 import BeautifulSoup
+from urllib.request import Request, urlopen
+import re
+
+def scrapeLinks(url):
+    # https://pythonprogramminglanguage.com/get-links-from-webpage/
+    req = Request(url)
+    html_page = urlopen(req)
+    soup = BeautifulSoup(html_page, "lxml")
+
+    links = []
+    for link in soup.findAll('a'):
+        href = link.get('href')
+        if href:
+            links.append(str(href))
+    return links
+
+class TechBlogScraper:
+    def __init__(self, url, linkRE, extraFilter=None) -> None:
+        self._url = url
+        self._linkRE = linkRE # only take links that match this regex
+        self._extraFilter = extraFilter
+    
+    @classmethod
+    def MarkTechPost(cls):
+        def extra_filter(links):
+            # Remove duplicate links
+            links = map(lambda x: x.removesuffix("#respond"), links)
+            links = list(set(links))
+            return sorted(links)
+        return TechBlogScraper(
+            url="https://www.marktechpost.com/", 
+            linkRE=r'https://www.marktechpost.com/\d+/\d+/\d+/.*',
+            extraFilter=extra_filter)
+    
+    def scrapeLinks(self):
+        res = scrapeLinks(self._url)
+        filter_fn = lambda x: re.search(self._linkRE, x)
+        res = list(filter(filter_fn, res))
+        if self._extraFilter:
+            res = self._extraFilter(res)
+        ans = []
+        for url in res:
+            ans.append(Result("", url, url))
+        return res, ans
+

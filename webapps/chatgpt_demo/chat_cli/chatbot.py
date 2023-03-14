@@ -26,7 +26,7 @@ while True:
     bot = ChatBot()
     user_input = prompt(
         '> ',
-        history=FileHistory('history.txt'),
+        history=FileHistory('history.hidden.txt'),
         auto_suggest=AutoSuggestFromHistory())
     # print(user_input)
     response = bot.chat_request(user_input)
