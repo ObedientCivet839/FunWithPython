@@ -9,6 +9,7 @@ def searchKeyword(query):
     search_args = (query, 1)
     results = engine.search(*search_args)
     ans = []
+    # BUG(P3): Treat wikipedia as a separate source and remove footnotes (e.g. [1],[2])
     for d in results:
         ans.append(Result(d['descriptions'], d['links'], d['titles']))
     return ans
