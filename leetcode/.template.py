@@ -30,7 +30,7 @@ class UnitTest(unittest.TestCase):
         testcases = [
             TestCase(
                 name="1",
-                nums = 
+                nums = ,
                 expected = 
             ),
         ]
