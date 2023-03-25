@@ -11,7 +11,7 @@ class Name:
         return '{first} {last}'.format(first=self.first, last=self.last)
     
     def fullname(self) -> str:
-        """Returns fullname string with middle initial: Trevor T. Ta """
+        """Returns fullname string with middle initial: Harry J. Potter"""
         return '{first} {middle}. {last}'.format(first=self.first, middle=self.middle[0], last=self.last)
 
     def __str__(self) -> str:
@@ -117,23 +117,10 @@ class Classroom:
     
     pass
 
-def printPeople():
-    p = Profile(Name("Trieu", "Huy", "Ta"), '1966-09-19')
-    print(p)
-    p = Profile(Name("Hien", "Duc", "Nguyen"), '1966-03-15')
-    print(p)
-    p = Profile(Name("trevor", "triet", "Ta"), '1991-08-13')
-    print(p)
-    p = Profile(Name("Thuyet", "Hien", "Ta"), '1998-06-06')
-    print(p)
 
 if __name__ == '__main__':
-    p1 = Profile(Name("trevor", "triet", "Ta"), '1991-08-13')
-    p2 = Profile(Name("Thuyet", "Hien", "Ta"), '1998-06-06')
+    p1 = Profile(Name("John", "Hey" "Smith"), '1203-02-23')
     sc = School("Berkeley")
     s1 = Student(p1, sc)
     print(s1)
-    s2 = Student(p2, sc)
-    print(s2)
-    print(sc.students)
     
