@@ -1,10 +1,10 @@
-from block import Block, Blockchain, Transaction
-from user import createProfile
-from store import Application
+from lib.block import Block, Blockchain, Transaction
+from lib.user import createProfile
+from apps.store import Application
 
 import threading
 
-def main():
+def runStores():
     user1 = createProfile("Harry", "J", "Potter", '1990-09-19')
     user2 = createProfile("Ron", "A", "Weasley", '1989-03-11')
     user3 = createProfile("Hermione", "C", "Ranger", '1989-04-01')
@@ -28,7 +28,7 @@ def main():
         for i in range(times):
             fn()
     
-    # TODO(P1): Multi-thread support
+    # DONE(P1): Multi-thread support
     t1 = threading.Thread(target=multipleSubmit, args=(amazon.submitTransaction, 10))
     t2 = threading.Thread(target=multipleSubmit, args=(google.submitTransaction, 10))
     
@@ -44,6 +44,8 @@ def main():
     # for b in bc.chain:
     #     print(b)
 
+def main():
+    runStores()
 
 if __name__ == "__main__":
     main()

@@ -1,6 +1,6 @@
 import random
-from user import Profile
-from block import Block, Blockchain, Transaction
+from lib.user import Profile
+from lib.block import Block, Blockchain, Transaction
 import time
 
 # DONE(P1): Implement a store with multiple users and multiple transactions at the same time.
@@ -32,19 +32,12 @@ class Application:
         desc = '{}: {} {} {}'.format(self.name, user1.name.firstlast(), action.lower(), user2.name.firstlast())
         return Transaction(user1, user2, desc)
     
-    def generate_hash(self, block: Block):
-        computed_hash = block.compute_hash()
-        while not Blockchain._is_valid_hash(computed_hash):
-            # print("Generating hash:", block.nonce)
-            block.nonce += 1
-            computed_hash = block.compute_hash()
-        return computed_hash
-    
-    def submitTransaction(self):
-        # Sleep a random 1-5 seconds
-        # sleep_amount = random.randint(1,5)
-        # print(self.name, ": Sleeping for", sleep_amount , "seconds")
-        # time.sleep(sleep_amount)
+    def submitTransaction(self, sleep = False):
+        if sleep:
+            # Sleep a random 1-5 seconds
+            sleep_amount = random.randint(1,5)
+            print(self.name, ": Sleeping for", sleep_amount , "seconds")
+            time.sleep(sleep_amount)
         
         txn = self._createRandomTransaction()
         # Create a new block contains the new transaction
@@ -56,7 +49,7 @@ class Application:
                 timestamp=time.time(),
                 previous_hash=self.bc.last_hash(),
             )
-            proof = self.generate_hash(new_block)
+            proof = self.bc.generate_hash(new_block)
             # print("proof:", proof)
             if self.bc.add_block(new_block, proof):
                 print("New block added:", new_block)
@@ -64,7 +57,4 @@ class Application:
             else:
                 print("!!! Failed to submit block. Trying again...")
         print("Submitted successful transaction: ", txn)
-        
-        
-        
     
