@@ -2,10 +2,55 @@ import random
 from lib.user import Profile
 from lib.block import Block, Blockchain, Transaction
 import time
+from datetime import datetime
 
 # DONE(P1): Implement a store with multiple users and multiple transactions at the same time.
 # Each time, a transaction needs to create a new valid block and create a proof.
 # Then, they will apply to the server to create a new block.
+
+# DONE(P2): Using Adapter, implements different types of transactions
+# Adapter is making the custom inputs to look like each other.
+class ActionTransaction(Transaction):
+    def __init__(self, from_user: Profile, to_user: Profile, action: str):
+        super().__init__(from_user, to_user, "")
+        self.from_user = from_user
+        self.to_user = to_user
+        self.action = action
+    
+    def description(self):
+        desc = '{} {} {}'.format(self.from_user.name.firstlast(), self.action.lower(), self.to_user.name.firstlast())
+        return desc
+
+    def __str__(self):
+        return self.description()
+
+# Using decorators to append application name and timestamp to the description
+class ApplicationTxnDecorator:
+    def __init__(self, app: str, txn: Transaction):
+        self.app = app
+        self.transaction = txn
+    
+    def description(self):
+        return '{}: {}'.format(self.app, self.transaction.description())
+    
+    def __str__(self):
+        return self.description()
+
+class TimestampedTxnDecorator:
+    def __init__(self, txn):
+        self.transaction = txn
+        self.timestamp = str(datetime.now())
+    
+    def description(self):
+        return '{}: {}'.format(self.timestamp, self.transaction.description())
+
+    def __str__(self) -> str:
+        return self.description()
+
+class MoneyTransaction(Transaction):
+    def __init__(self, amount: int, currency: str):
+        pass
+
 class Application:
     """Represent a mobile app that will submit requests to the blockchain.
     """
@@ -29,8 +74,11 @@ class Application:
         user1 = random.choice(self.users)
         user2 = random.choice(self.users)
         action = random.choice(self.actions)
-        desc = '{}: {} {} {}'.format(self.name, user1.name.firstlast(), action.lower(), user2.name.firstlast())
-        return Transaction(user1, user2, desc)
+        
+        action_txn = ActionTransaction(user1, user2, action)
+        timestamped_decorator = TimestampedTxnDecorator(action_txn)
+        app_decorator = ApplicationTxnDecorator(self.name, timestamped_decorator)
+        return timestamped_decorator
     
     def submitTransaction(self, sleep = False):
         if sleep:
