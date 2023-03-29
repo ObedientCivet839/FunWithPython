@@ -47,6 +47,7 @@ class TimestampedTxnDecorator:
     def __str__(self) -> str:
         return self.description()
 
+# TODO(P2): Use bridge pattern to support monetary value in the transaction
 class MoneyTransaction(Transaction):
     def __init__(self, amount: int, currency: str):
         pass
