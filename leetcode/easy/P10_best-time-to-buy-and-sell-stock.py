@@ -27,7 +27,15 @@
 # 
 #
 class Solution:
-    def maxProfit(self, prices: List[int]) -> int:
+    def maxProfit(self, prices: list[int]) -> int:
+        minPrice = prices[0]
+        maxGap = 0
+        for p in prices[1:]:
+            minPrice = min(minPrice, p)
+            newGap = p - minPrice
+            if newGap > maxGap:
+                maxGap = newGap
+        return maxGap
 
 ### TEST UTILITIES
 
@@ -48,14 +56,19 @@ class UnitTest(unittest.TestCase):
         testcases = [
             TestCase(
                 name="1",
-                nums = ,
-                expected = 
+                nums = [7,1,5,3,6,4],
+                expected = 5
+            ),
+            TestCase(
+                name="2",
+                nums = [7,6,4,3,1],
+                expected = 0
             ),
         ]
 
         s = Solution()
         for tc in testcases:
-            got = s.X(tc.nums, tc.targets)
+            got = s.maxProfit(tc.nums)
             self.assertEqual(
                 tc.expected,
                 got,
