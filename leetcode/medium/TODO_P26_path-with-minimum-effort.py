@@ -62,6 +62,45 @@ class Solution1:
                 self.helper(new_row, new_col, max(max_gap, new_gap), visited)
         visited.remove((row, col))
 
+# Method 2:
+# 
+# Idea: Dijkstra
+#
+# Runtime: O(???)
+#
+class Solution:
+    def minimumEffortPath(self, heights: list[list[int]]) -> int:
+        R, C = len(heights), len(heights[0])
+        weights = [[-1e7 for i in range(C)] for j in range(R)]
+        weights[0][0] = 0
+
+        visited = set()
+        row, col = 0, 0  # starting position
+        queue = []
+        queue.append((row, col))
+        while not queue:  # if queue is not empty
+            row, col = queue.pop(0)
+            visited.add((row, col))        
+            dirs = [(0,1), (0, -1), (1,0), (-1,0)]
+        
+            for d in dirs:
+                new_row = row + d[0]
+                new_col = col + d[1]
+                if (new_row, new_col) in visited:
+                    continue
+                # check inbound
+                if 0 <= new_row < self.R and 0 <= new_col < self.C:
+                    new_val = self.H[new_row][new_col]
+                    new_gap = abs(weights[row][col] - new_val)
+                    weights[new_row][new_col] = max(weights[row][col], new_gap)
+        visited.remove((row, col))
+
+        self.H = heights
+        self.global_max_gap = 1e7
+        self.helper(0, 0, 0, set())
+        return self.global_max_gap
+    
+
 ### TEST UTILITIES
 
 ### MAIN FUNCTIONS
