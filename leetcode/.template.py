@@ -1,3 +1,5 @@
+from typing import List, Optional, Tuple
+
 ### PROBLEM STATEMENT
 
 # Method 1:
