@@ -65,40 +65,87 @@ class Solution1:
 # Method 2:
 # 
 # Idea: Dijkstra
-#
+# Almost work but runtime is too high - need to use heap
+# 
 # Runtime: O(???)
 #
-class Solution:
+class Solution2:
     def minimumEffortPath(self, heights: list[list[int]]) -> int:
         R, C = len(heights), len(heights[0])
-        weights = [[-1e7 for i in range(C)] for j in range(R)]
-        weights[0][0] = 0
+        efforts = [[1e7 for i in range(C)] for j in range(R)]
+        efforts[0][0] = 0
 
-        visited = set()
-        row, col = 0, 0  # starting position
         queue = []
-        queue.append((row, col))
-        while not queue:  # if queue is not empty
-            row, col = queue.pop(0)
-            visited.add((row, col))        
+        for r in range(R):
+            for c in range(C):
+                queue.append((r,c))  # add all points to queue
+
+        # TODO(P2): Implement a queue with weights (efforts)        
+        def next_point(queue, efforts):
+            # get the next point on the board with the smallest path weight so far
+            min_weight = 1e7
+            res = None
+            for (r, c) in queue:
+                if min_weight > efforts[r][c]:
+                    min_weight = efforts[r][c]
+                    res = (r,c)
+            return res
+        
+        while queue:  # if queue is not empty
+            p = next_point(queue, efforts)
+            row, col = p
+            queue.remove(p)  # remove the point from the queue
             dirs = [(0,1), (0, -1), (1,0), (-1,0)]
         
             for d in dirs:
                 new_row = row + d[0]
                 new_col = col + d[1]
-                if (new_row, new_col) in visited:
+                # skip points that already visited
+                if (new_row, new_col) not in queue:
                     continue
                 # check inbound
-                if 0 <= new_row < self.R and 0 <= new_col < self.C:
-                    new_val = self.H[new_row][new_col]
-                    new_gap = abs(weights[row][col] - new_val)
-                    weights[new_row][new_col] = max(weights[row][col], new_gap)
-        visited.remove((row, col))
+                if 0 <= new_row < R and 0 <= new_col < C:
+                    # height at the new point
+                    new_height = heights[new_row][new_col]
+                    # difference from current position to the next position
+                    new_gap = abs(heights[row][col] - new_height)
+                    # the new effort is the previous effort or the new gap
+                    new_effort = max(new_gap, efforts[row][col])
+                    # update weights at the new position if the new gap is smaller than the current gap
+                    efforts[new_row][new_col] = min(efforts[new_row][new_col], new_effort)
+        return efforts[R-1][C-1]
+    
 
-        self.H = heights
-        self.global_max_gap = 1e7
-        self.helper(0, 0, 0, set())
-        return self.global_max_gap
+class Solution:
+    def minimumEffortPath(self, heights: list[list[int]]) -> int:
+        R, C = len(heights), len(heights[0])
+        efforts = [[1e7 for i in range(C)] for j in range(R)]
+        efforts[0][0] = 0
+
+        minHeap = [(0, 0, 0)] # distance, row, col
+        dirs = [(0,1), (0, -1), (1,0), (-1,0)]
+
+        while minHeap:  # if queue is not empty
+            d, r, c = heappop(minHeap)
+            # if the min distance to this node is already greater than the current effort, skip
+            if d > efforts[r][c]:
+                continue
+        
+            for d in dirs:
+                new_row = r + d[0]
+                new_col = c + d[1]
+                # check inbound
+                if 0 <= new_row < R and 0 <= new_col < C:
+                    # difference from current position to the next position
+                    new_gap = abs(heights[r][c] - heights[new_row][new_col])
+                    # the new effort is the previous effort or the new gap
+                    new_effort = max(new_gap, efforts[r][c])
+                    # update weights at the new position if the new gap is smaller than the current gap
+                    if efforts[new_row][new_col] > new_effort:
+                        efforts[new_row][new_col] = new_effort
+                        # push the new point into the heap
+                        heappush(minHeap, (new_effort, new_row, new_col))
+        return efforts[R-1][C-1]
     
 
 ### TEST UTILITIES
