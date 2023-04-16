@@ -14,9 +14,13 @@ class ChatBot:
     def chat_request(self, text):
         self.chat_history.append({"role": "user", "content": text})
         # https://platform.openai.com/docs/guides/chat/introduction
+        # resp = openai.ChatCompletion.create(
+        #     model="gpt-3.5-turbo",
+        #     messages=self.chat_history
+        # )
         resp = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
-            messages=self.chat_history
+            messages={"role": "user", "content": text}
         )
         resp = resp.choices[0].message.content
         self.chat_history.append({"role": "system", "content": resp})
