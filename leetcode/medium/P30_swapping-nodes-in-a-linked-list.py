@@ -1,28 +1,27 @@
 ### PROBLEM STATEMENT
-# https://leetcode.com/problems/swap-nodes-in-pairs/
+# https://leetcode.com/problems/swapping-nodes-in-a-linked-list/description/
 
-# Given a linked list, swap every two adjacent nodes and return its head. You must solve the problem without modifying the values in the list's nodes (i.e., only nodes themselves may be changed.)
+# You are given the head of a linked list, and an integer k.
+
+# Return the head of the linked list after swapping the values of the kth node from the beginning and the kth node from the end (the list is 1-indexed).
 
 # Example 1:
-# Input: head = [1,2,3,4]
-# Output: [2,1,4,3]
+# Input: head = [1,2,3,4,5], k = 2
+# Output: [1,4,3,2,5]
 
 # Example 2:
-# Input: head = []
-# Output: []
+# Input: head = [7,9,6,6,7,8,3,0,9,5], k = 5
+# Output: [7,9,6,6,8,7,3,0,9,5]
 
-# Example 3:
-# Input: head = [1]
-# Output: [1]
 
 from typing import List, Optional, Tuple
 # Method 1:
 # 
 # Idea:
-# - Use a dummy node for easy swapping.
-# - Rewire the nodes in place
+# - Can I swap the values without swapping the nodes?
 #
-# Runtime: O(N)
+# Runtime: O(???)
+# 
 #
 # Definition for singly-linked list.
 class ListNode:
@@ -31,21 +30,19 @@ class ListNode:
         self.next = next
 
 class Solution:
-    def swapPairs(self, head: Optional[ListNode]) -> Optional[ListNode]:
-        dummy_head = ListNode(next=head)
-        ptr = dummy_head
-        # BUG1: while ptr is not None = while ptr
-        while ptr and ptr.next and ptr.next.next:
-            n1 = ptr.next
-            n2 = ptr.next.next
-            # rewire the points
-            ptr.next = n2
-            n1.next = n2.next
-            n2.next =n1
-            # BUG2: ptr is the node BEFORE the 2 nodes to swap
-            ptr = n1
-        return dummy_head.next
+    def swapNodes(self, head: Optional[ListNode], k: int) -> Optional[ListNode]:
+        left = head
+        end = head
+        for i in range(k-1):
+            left = end = left.next
+        right = head
+        while end:
+            right = right.next
+            end = end.next
 
+        left.val, right.val = right.val, left.val
+        return head
+        
 
 ### TEST UTILITIES
 
